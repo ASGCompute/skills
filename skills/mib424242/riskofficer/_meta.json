@@ -3,11 +3,16 @@
   "slug": "riskofficer",
   "displayName": "Riskofficer Openclaw Skill",
   "latest": {
-    "version": "2.0.4",
-    "publishedAt": 1771570576236,
-    "commit": "https://github.com/openclaw/skills/commit/6bbf5def68d5ac81fb243e181bae7f4b9f143d71"
+    "version": "3.0.0",
+    "publishedAt": 1772368058568,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.0.4",
+      "publishedAt": 1771570576236,
+      "commit": "https://github.com/openclaw/skills/commit/6bbf5def68d5ac81fb243e181bae7f4b9f143d71"
+    },
     {
       "version": "2.0.2",
       "publishedAt": 1771435748033,

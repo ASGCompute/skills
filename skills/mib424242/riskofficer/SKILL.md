@@ -1,7 +1,8 @@
 ---
 name: riskofficer
-description: Risk management and portfolio analytics: VaR, Monte Carlo, stress tests, Risk Parity and Calmar optimization. Run risk assessments, scenarios, and allocation optimization on virtual portfolios; no real broker orders.
-metadata: {"openclaw":{"requires":{"env":["RISK_OFFICER_TOKEN"]},"primaryEnv":"RISK_OFFICER_TOKEN","emoji":"📊","homepage":"https://riskofficer.tech"}}
+description: Portfolio risk management and analytics. Use when user asks to create a portfolio, generate auto portfolio, calculate VaR, run Monte Carlo, stress test, optimize with Risk Parity or Calmar, manage positions, or check investment risk. Also covers ticker search, broker sync, and portfolio comparison.
+homepage: https://github.com/mib424242/riskofficer-openclaw-skill
+metadata: {"clawdbot":{"requires":{"env":["RISK_OFFICER_TOKEN"]},"primaryEnv":"RISK_OFFICER_TOKEN","emoji":"📊","homepage":"https://riskofficer.tech"}}
 ---
 
 ## RiskOfficer Portfolio Management
@@ -11,6 +12,14 @@ Connects to the RiskOfficer API to manage investment portfolios and calculate fi
 **Required:** One environment variable — `RISK_OFFICER_TOKEN` (create in RiskOfficer app → Settings → API Keys). No other env vars or binaries are required.
 
 **Source:** Official skill repository: [github.com/mib424242/riskofficer-openclaw-skill](https://github.com/mib424242/riskofficer-openclaw-skill). Product: [riskofficer.tech](https://riskofficer.tech). The token is issued only by the RiskOfficer app; this skill does not collect or store credentials.
+
+### Credentials and token handling
+
+- **This skill does not store or log your token.** The token is sent only in the HTTP `Authorization` header to `api.riskofficer.tech`; it is not written to disk, logged, or sent elsewhere. Where you store the token (environment variable or `~/.openclaw/openclaw.json`) is entirely under your control.
+- **Prefer** setting `RISK_OFFICER_TOKEN` as an environment variable for the session rather than saving it in `openclaw.json`. If you use `openclaw.json`, restrict file permissions and be aware which agents or users can read that file.
+- **RiskOfficer currently issues account-level tokens** (no scoped tokens). Create a token named for this skill (e.g. "OpenClaw") and revoke it in the RiskOfficer app if you stop using the skill.
+- **Token scope:** The token allows the skill to access your RiskOfficer data (portfolios, risk calculations, broker-synced positions for read-only analysis). Revoke or rotate the token if you need to revoke access.
+- **Verify links:** Confirm that [github.com/mib424242/riskofficer-openclaw-skill](https://github.com/mib424242/riskofficer-openclaw-skill) and [riskofficer.tech](https://riskofficer.tech) match the publisher you trust before installing or providing a token.
 
 ### Scope: analysis and research only (virtual portfolios)
 
@@ -49,6 +58,27 @@ https://api.riskofficer.tech/api/v1
 ```
 
 All requests require: `Authorization: Bearer ${RISK_OFFICER_TOKEN}`
+
+### External Endpoints
+
+This skill calls **only** the RiskOfficer API. No other external services are contacted.
+
+| Endpoint base | Data sent | Purpose |
+|---|---|---|
+| `https://api.riskofficer.tech/api/v1/*` | Bearer token + request parameters (portfolio IDs, ticker symbols, amounts, optimization settings) | All portfolio, risk, and optimization operations |
+
+No data is sent to any other domain. The skill contains no scripts, no executables, and no outbound calls beyond the documented API.
+
+### Security & Privacy
+
+- **Network:** All HTTP requests go exclusively to `api.riskofficer.tech` over HTTPS. No other domains are contacted.
+- **Credentials:** Only `RISK_OFFICER_TOKEN` is used. It is passed solely in the `Authorization` HTTP header. It is never written to disk, logged, or included in any output.
+- **Local files:** This skill reads and writes no local files. It has no `scripts/` directory and no executable code.
+- **Data flow:** User input (ticker names, portfolio parameters, amounts) is sent to the RiskOfficer API and the response is presented back. No data is cached, stored, or forwarded elsewhere.
+
+### Trust Statement
+
+By using this skill, your requests and portfolio data are sent to the RiskOfficer API (`api.riskofficer.tech`). Only install this skill if you trust RiskOfficer ([riskofficer.tech](https://riskofficer.tech)) with your portfolio analysis data. The source code is fully open at [github.com/mib424242/riskofficer-openclaw-skill](https://github.com/mib424242/riskofficer-openclaw-skill).
 
 ---
 
@@ -584,6 +614,135 @@ Response: `new_snapshot_id`. Can only be applied once per optimization.
 
 ---
 
+### Auto Portfolio Generation (QUANT — currently free for all users)
+
+Automatically construct an optimal portfolio from scratch. The system selects assets from the available universe, optimizes weights using the chosen strategy, rounds to whole lots, and returns ready-to-save positions.
+
+#### Get Universe Stats
+Check how many assets are available before starting generation. Does not require Quant subscription.
+
+```bash
+curl -s "https://api.riskofficer.tech/api/v1/portfolio/auto-generate/universe-stats" \
+  -H "Authorization: Bearer ${RISK_OFFICER_TOKEN}"
+```
+
+**Response:**
+```json
+{
+  "RUB": {"eligible_assets": 45, "last_updated": "2026-02-28T05:00:00Z", "strategies_available": ["max_sharpe", "hrp", "max_calmar"]},
+  "USD": {"eligible_assets": 120, "last_updated": "2026-02-28T05:10:00Z", "strategies_available": ["max_sharpe", "hrp"]}
+}
+```
+
+Always show universe stats to the user before starting generation so they know what is available.
+
+#### Start Auto-Generate
+When the user wants to create a portfolio automatically:
+
+```bash
+curl -s -X POST "https://api.riskofficer.tech/api/v1/portfolio/auto-generate" \
+  -H "Authorization: Bearer ${RISK_OFFICER_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "currency": "RUB",
+    "amount": 500000,
+    "strategy": "max_sharpe",
+    "constraints": {
+      "max_weight": 0.25,
+      "min_assets": 5,
+      "max_assets": 25,
+      "exclude_tickers": []
+    }
+  }'
+```
+
+**Parameters:**
+- `currency` (required): `"RUB"` or `"USD"`
+- `amount` (required): investment amount (>0; minimum 10,000 RUB / 100 USD)
+- `strategy` (required): `"max_sharpe"` | `"hrp"` | `"max_calmar"`
+- `constraints` (optional):
+  - `max_weight` (0–1, default 0.25): max weight per asset
+  - `min_assets` (3–50, default 5): minimum number of assets
+  - `max_assets` (3–50, default 25): maximum number of assets
+  - `exclude_tickers`: list of tickers to exclude
+
+**Strategy selection guidance:**
+- User wants "optimal" / "best balance" / "maximum return" → `max_sharpe`
+- User wants "reliable" / "diversified" / "safe" / "stable" → `hrp`
+- User wants "minimum drawdowns" / "protect from losses" → `max_calmar`
+- If unsure → `max_sharpe` (recommended default)
+
+**Response:** `optimization_id`, `status: "pending"`. Then poll as usual.
+
+#### Poll Status
+Same as other optimizations:
+
+```bash
+curl -s "https://api.riskofficer.tech/api/v1/portfolio/optimizations/{optimization_id}" \
+  -H "Authorization: Bearer ${RISK_OFFICER_TOKEN}"
+```
+
+Check `optimization_type === "auto_generate"`. Poll every 3 seconds.
+
+#### Get Result
+When status is `done`:
+
+```bash
+curl -s "https://api.riskofficer.tech/api/v1/portfolio/optimizations/{optimization_id}/result" \
+  -H "Authorization: Bearer ${RISK_OFFICER_TOKEN}"
+```
+
+**Response:**
+```json
+{
+  "optimization_id": "uuid",
+  "optimization_type": "auto_generate",
+  "status": "done",
+  "portfolio": {
+    "positions": [
+      {"ticker": "SBER", "target_weight": 0.15, "quantity": 200, "lots": 2, "value": 57000},
+      {"ticker": "LKOH", "target_weight": 0.12, "quantity": 8, "lots": 8, "value": 48000}
+    ],
+    "total_invested": 485000,
+    "cash_residual": 15000,
+    "assets_count": 12,
+    "currency": "RUB"
+  },
+  "metrics": {
+    "expected_annual_return": 0.18,
+    "expected_volatility": 0.22,
+    "sharpe_ratio": 0.82,
+    "max_drawdown": 0.15,
+    "var_95_daily": 12500,
+    "hhi": 0.09
+  },
+  "selection_reasoning": {
+    "strategy": "max_sharpe",
+    "universe_size": 45,
+    "after_amount_filter": 38,
+    "final_selected": 12,
+    "converged": true,
+    "fallback_used": null
+  }
+}
+```
+
+Present the result clearly: positions with weights/quantities, key metrics (Sharpe, Max Drawdown, Expected Return), and cash residual. If `fallback_used` is not null, inform the user which fallback strategy was applied.
+
+#### Apply (Save as Portfolio)
+After showing the result and getting user confirmation:
+
+```bash
+curl -s -X POST "https://api.riskofficer.tech/api/v1/portfolio/optimizations/{optimization_id}/apply" \
+  -H "Authorization: Bearer ${RISK_OFFICER_TOKEN}"
+```
+
+Creates a new manual portfolio from the generated positions. Response: `new_snapshot_id`.
+
+**IMPORTANT:** Always show the full generated portfolio and ask for explicit confirmation before applying.
+
+---
+
 ### Subscription Status
 
 > **Note:** Quant subscription is currently **FREE for all users**. All features work without payment.
@@ -599,7 +758,7 @@ Currently all users return `has_subscription: true`.
 
 ## Async Operations
 
-VaR, Monte Carlo, Stress Test, and Optimization are **asynchronous**.
+VaR, Monte Carlo, Stress Test, Optimization, and Auto-Generate are **asynchronous**.
 
 **Polling pattern:**
 1. POST endpoint → get `calculation_id` / `simulation_id` / `optimization_id`
@@ -615,7 +774,8 @@ VaR, Monte Carlo, Stress Test, and Optimization are **asynchronous**.
 | VaR | 3–10 seconds |
 | Monte Carlo | 10–30 seconds |
 | Stress Test | 5–15 seconds |
-| Optimization | 10–30 seconds |
+| Optimization (Risk Parity / Calmar) | 10–30 seconds |
+| Auto Portfolio Generation | 15–45 seconds |
 
 **User communication:**
 - Show "Calculating..." immediately after starting
@@ -650,8 +810,11 @@ VaR, Monte Carlo, Stress Test, and Optimization are **asynchronous**.
    - `400 INSUFFICIENT_HISTORY` → Not enough price history for Calmar (200+ trading days needed); suggest Risk Parity
    - `404 Not Found` → Portfolio or snapshot not found (may have been deleted)
    - `429 Too Many Requests` → Optimization rate limit reached
+   - `503 Service Unavailable` → Market data not ready or stale (auto-generate); try again later
 
 9. **Active Snapshot:** `active_snapshot_id` from `/portfolios/list` takes priority over `snapshot_id` when running calculations. Use `active_snapshot_id || snapshot_id` for optimization calls.
+
+10. **Auto-Generate:** Always confirm strategy choice and show universe stats before starting auto portfolio generation. Present the full result (positions, metrics, cash residual) and ask for confirmation before applying (saving).
 
 ---
 
@@ -751,3 +914,24 @@ VaR, Monte Carlo, Stress Test, and Optimization are **asynchronous**.
 → Confirm: "This will remove the Tinkoff connection. Portfolio history will be kept. Continue?"
 → On confirmation: `DELETE /brokers/connections/tinkoff?sandbox=false`
 → Inform that reconnection requires the mobile app
+
+### User wants to generate a portfolio automatically
+"Create an investment portfolio for 500K rubles" / "Собери портфель на 500 тысяч"
+→ `GET /portfolio/auto-generate/universe-stats` → show available assets per currency
+→ Suggest strategy (default: max_sharpe) and confirm with user
+→ `POST /portfolio/auto-generate` with `{currency: "RUB", amount: 500000, strategy: "max_sharpe"}`
+→ Poll until done
+→ Present positions, metrics (Sharpe, Max DD, Expected Return), cash residual
+→ Ask: "Save this portfolio?" → on confirmation: `POST .../apply`
+
+### User wants a safe/reliable portfolio
+"Build me a safe portfolio for $10,000" / "Надёжный портфель на 10 тысяч долларов"
+→ Strategy: `hrp` (Hierarchical Risk Parity — best for stability)
+→ `GET /portfolio/auto-generate/universe-stats` → confirm USD availability
+→ `POST /portfolio/auto-generate` with `{currency: "USD", amount: 10000, strategy: "hrp"}`
+→ Poll, present result, ask to save
+
+### User asks what's available for auto-generation
+"What assets can I auto-generate from?" / "Какие активы доступны для автопортфеля?"
+→ `GET /portfolio/auto-generate/universe-stats`
+→ Show per currency: number of eligible assets, available strategies, last updated
