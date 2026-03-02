@@ -12,11 +12,11 @@ requirements:
 metadata:
   clawdbot:
     emoji: "🛡️"
-    version: "1.0.9"
+    version: "1.1.0"
     category: "Security"
     type: "python-middleware"
     security_manifest:
-      network_access: none
+      network_access: "optional (only when using email integration scripts)"
       filesystem_access: "Write-only logging to ~/.openclaw/memory/"
       purpose: "Log security violations locally for user audit."
 ---
@@ -27,7 +27,10 @@ metadata:
 
 ## ⚠️ Security Notice
 
-This package is **offline-only** — it does not make any network calls.
+This package has two modes:
+
+1. **Core Scanner (offline):** `check_input()` and `check_output()` — no network calls
+2. **Email Integration (network):** `send_protected_email.sh` — requires gog CLI for Gmail
 
 ## Installation
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "counterclaw-core"
-version = "1.0.9"
+version = "1.1.0"
 description = "Defensive security for AI agents - snaps shut on malicious payloads"
 readme = "README.md"
 license = {text = "MIT"}
@@ -37,6 +37,9 @@ requires-env = [
 paths = [
     "~/.openclaw/memory/",
 ]
+
+# Note: The core scanner is offline. Optional email integration
+# (send_protected_email.sh) requires gog CLI and network access.
 
 [tool.setuptools.packages.find]
 where = ["src"]
