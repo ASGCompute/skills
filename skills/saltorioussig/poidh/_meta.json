@@ -3,11 +3,16 @@
   "slug": "poidh",
   "displayName": "POIDH Bounty Bot",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1771943559051,
-    "commit": "https://github.com/openclaw/skills/commit/8719e53121591a1722cb0e6ef9664d132fe8fd32"
+    "version": "1.0.3",
+    "publishedAt": 1772382973578,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1771943559051,
+      "commit": "https://github.com/openclaw/skills/commit/8719e53121591a1722cb0e6ef9664d132fe8fd32"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1771787480533,

@@ -1,6 +1,6 @@
 ---
 name: poidh-bounty
-description: Post bounties and evaluate/accept winning submissions on poidh (pics or it didn't happen) on Base. Use this skill when the user wants to create a bounty on poidh.xyz, post a task with an ETH reward on-chain, evaluate photo submissions using vision, accept a winning claim on a solo bounty, or initiate/resolve voting on an open bounty.
+description: Post bounties and evaluate/accept winning submissions on poidh (pics or it didn't happen) on Arbitrum, Base, or Degen Chain. Use this skill when the user wants to create a bounty on poidh.xyz, post a task with an ETH or DEGEN reward on-chain, evaluate photo submissions using vision, accept a winning claim on a solo bounty, or initiate/resolve voting on an open bounty.
 metadata:
   clawdbot:
     env:
@@ -14,7 +14,7 @@ metadata:
 
 ## Overview
 
-This skill interacts with the PoidhV3 contract on Base to:
+This skill interacts with the PoidhV3 contracts on Arbitrum, Base, and Degen Chain to:
 
 1. **Post bounties** (solo or open)
 2. **Evaluate claim submissions** using vision — fetch the image URI from each claim and compare against the bounty description
@@ -69,10 +69,13 @@ The poidh.xyz URL also changes per chain:
 ```bash
 if [ "$POIDH_CHAIN" = "arbitrum" ]; then
   POIDH_BASE_URL="https://poidh.xyz/arbitrum"
+  POIDH_V2_OFFSET=180
 elif [ "$POIDH_CHAIN" = "degen" ]; then
   POIDH_BASE_URL="https://poidh.xyz/degen"
+  POIDH_V2_OFFSET=1197
 else
   POIDH_BASE_URL="https://poidh.xyz/base"
+  POIDH_V2_OFFSET=986
 fi
 ```
 
@@ -134,10 +137,11 @@ cast receipt <TX_HASH> --rpc-url $RPC_URL --json | \
 import sys, json
 receipt = json.load(sys.stdin)
 for log in receipt['logs']:
-    if log['address'].lower() == '$POIDH_CONTRACT_ADDRESS'.lower() and len(log['topics']) >= 2:
+    if log['address'].lower() == '${POIDH_CONTRACT_ADDRESS}'.lower() and len(log['topics']) >= 2:
         bounty_id = int(log['topics'][1], 16)
+        frontend_id = bounty_id + ${POIDH_V2_OFFSET}
         print(f'Bounty ID: {bounty_id}')
-        print(f'View at: $POIDH_BASE_URL/{bounty_id}')
+        print(f'View at: ${POIDH_BASE_URL}/bounty/{frontend_id}')
         break
 "
 ```
@@ -425,7 +429,7 @@ cast send $POIDH_CONTRACT_ADDRESS \
 1. Ask for: **name**, **description**, **amount** (ETH on Arbitrum/Base, DEGEN on Degen Chain), **type** (solo or open — default solo)
 2. Confirm with user before sending — this spends real ETH (or DEGEN on Degen Chain)
 3. Run `createSoloBounty` or `createOpenBounty`
-4. Return tx hash and `$POIDH_BASE_URL/<bountyId>`
+4. Return tx hash and `$POIDH_BASE_URL/bounty/<bountyId + $POIDH_V2_OFFSET>`
 
 ### Submitting a Claim
 
