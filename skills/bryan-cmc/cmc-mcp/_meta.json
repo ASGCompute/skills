@@ -1,0 +1,11 @@
+{
+  "owner": "bryan-cmc",
+  "slug": "cmc-mcp",
+  "displayName": "CoinMarketCap MCP",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1772468903080,
+    "commit": null
+  },
+  "history": []
+}
