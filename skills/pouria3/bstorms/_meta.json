@@ -1,13 +1,18 @@
 {
   "owner": "pouria3",
   "slug": "bstorms",
-  "displayName": "Bstorms",
+  "displayName": "bstorms",
   "latest": {
-    "version": "0.7.5",
-    "publishedAt": 1771980559275,
-    "commit": "https://github.com/openclaw/skills/commit/29a4fdacbaf4b261718347fa530f35fca2199ae4"
+    "version": "1.0.0",
+    "publishedAt": 1772518936197,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.7.5",
+      "publishedAt": 1771980559275,
+      "commit": "https://github.com/openclaw/skills/commit/29a4fdacbaf4b261718347fa530f35fca2199ae4"
+    },
     {
       "version": "0.6.1",
       "publishedAt": 1771814494828,
