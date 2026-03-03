@@ -1,0 +1,11 @@
+{
+  "owner": "jisuapi",
+  "slug": "geoconvert",
+  "displayName": "极速数据经纬度地址转换",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772522133927,
+    "commit": null
+  },
+  "history": []
+}
