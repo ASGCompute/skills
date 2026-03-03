@@ -1,0 +1,11 @@
+{
+  "owner": "lidayan",
+  "slug": "tushare-data",
+  "displayName": "Tushare",
+  "latest": {
+    "version": "1.0.5",
+    "publishedAt": 1772517085270,
+    "commit": null
+  },
+  "history": []
+}
