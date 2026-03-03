@@ -52,13 +52,12 @@ def parse_channel_id():
 
 def ws_endpoint():
     """Convert HTTP endpoint to WebSocket endpoint."""
-    return ENDPOINT.replace("https://", "wss://").replace("http://", "ws://")
+    pass  # ws_endpoint kept for legacy, unused
 
 
 def ai_write_script(script_id, prompt):
-    """Use Teleskopiq AI to write a script via graphql-ws WebSocket subscription."""
+    """Use Teleskopiq AI to write a script via SSE (Server-Sent Events) subscription."""
     channel_id = parse_channel_id()
-    url = ws_endpoint()
 
     subscription_query = """subscription ChatJob(
   $pageId: String!, $message: String!, $currentScript: String,
@@ -66,7 +65,7 @@ def ai_write_script(script_id, prompt):
 ) {
   chatJob(pageId: $pageId, message: $message, currentScript: $currentScript,
     history: $history, activeChannelId: $activeChannelId, aiMode: $aiMode
-  ) { type text thought scriptId error }
+  ) { type text thought script error }
 }"""
 
     variables = {
@@ -78,87 +77,51 @@ def ai_write_script(script_id, prompt):
         "aiMode": "author",
     }
 
-    try:
-        import websocket as ws_lib
+    payload = json.dumps({
+        "query": subscription_query,
+        "variables": variables,
+    })
 
-        ws = ws_lib.create_connection(url, subprotocols=["graphql-ws"], timeout=120)
-
-        ws.send(json.dumps({"type": "connection_init", "payload": {"Authorization": f"Bearer {API_KEY}"}}))
-        ack = json.loads(ws.recv())
-        if ack.get("type") != "connection_ack":
-            print(f"Error: expected connection_ack, got {ack}", file=sys.stderr)
+    accumulated = []
+    with requests.post(
+        ENDPOINT,
+        headers={
+            "Content-Type": "application/json",
+            "Accept": "text/event-stream",
+            "Authorization": f"Bearer {API_KEY}",
+        },
+        data=payload,
+        stream=True,
+        timeout=180,
+    ) as resp:
+        if not resp.ok:
+            print(f"Error: HTTP {resp.status_code}", file=sys.stderr)
             sys.exit(1)
 
-        ws.send(json.dumps({
-            "type": "subscribe", "id": "1",
-            "payload": {"query": subscription_query, "variables": variables},
-        }))
-
-        accumulated = []
-        while True:
-            raw = ws.recv()
-            msg = json.loads(raw)
-            mtype = msg.get("type")
-            if mtype == "next":
-                job = msg.get("payload", {}).get("data", {}).get("chatJob", {})
-                chunk_type = job.get("type", "")
-                if chunk_type in ("text_chunk", "script_chunk") and job.get("text"):
-                    accumulated.append(job["text"])
-                    print(".", end="", flush=True)
-                elif chunk_type == "complete":
-                    break
-                if job.get("error"):
-                    print(f"\nAI error: {job['error']}", file=sys.stderr)
-                    break
-            elif mtype == "complete":
+        done = False
+        for line in resp.iter_lines(decode_unicode=True):
+            if done:
                 break
-            elif mtype == "error":
-                print(f"\nSubscription error: {msg}", file=sys.stderr)
-                break
+            if not line.startswith("data: "):
+                continue
+            data = line[6:].strip()
+            if not data:
+                continue
+            try:
+                parsed = json.loads(data)
+            except json.JSONDecodeError:
+                continue
 
-        ws.send(json.dumps({"type": "complete", "id": "1"}))
-        ws.close()
-
-    except ImportError:
-        import asyncio
-        try:
-            import websockets
-        except ImportError:
-            print("Error: need websocket-client or websockets. Install: pip install websocket-client", file=sys.stderr)
-            sys.exit(1)
-
-        async def _run():
-            async with websockets.connect(url, subprotocols=["graphql-ws"]) as wsc:
-                await wsc.send(json.dumps({"type": "connection_init", "payload": {"Authorization": f"Bearer {API_KEY}"}}))
-                ack = json.loads(await wsc.recv())
-                if ack.get("type") != "connection_ack":
-                    print(f"Error: expected connection_ack, got {ack}", file=sys.stderr)
-                    sys.exit(1)
-                await wsc.send(json.dumps({
-                    "type": "subscribe", "id": "1",
-                    "payload": {"query": subscription_query, "variables": variables},
-                }))
-                chunks = []
-                async for raw in wsc:
-                    msg = json.loads(raw)
-                    mt = msg.get("type")
-                    if mt == "next":
-                        job = msg.get("payload", {}).get("data", {}).get("chatJob", {})
-                        ct = job.get("type", "")
-                        if ct in ("text_chunk", "script_chunk") and job.get("text"):
-                            chunks.append(job["text"])
-                            print(".", end="", flush=True)
-                        elif ct == "complete":
-                            break
-                        if job.get("error"):
-                            print(f"\nAI error: {job['error']}", file=sys.stderr)
-                            break
-                    elif mt == "complete":
-                        break
-                await wsc.send(json.dumps({"type": "complete", "id": "1"}))
-                return chunks
-
-        accumulated = asyncio.get_event_loop().run_until_complete(_run())
+            job = (parsed.get("data") or {}).get("chatJob") or {}
+            chunk_type = job.get("type", "")
+            if chunk_type in ("text_chunk", "script_chunk", "script") and job.get("text"):
+                accumulated.append(job["text"])
+                print(".", end="", flush=True)
+            elif chunk_type == "complete":
+                done = True
+            if job.get("error"):
+                print(f"\nAI error: {job['error']}", file=sys.stderr)
+                done = True
 
     content = "".join(accumulated)
     print(f"\nAI writing complete: {len(content)} chars")
