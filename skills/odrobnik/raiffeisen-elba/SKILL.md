@@ -2,7 +2,7 @@
 name: raiffeisen-elba
 description: "Automate Raiffeisen ELBA online banking: login/logout, list accounts, and fetch transactions via Playwright."
 summary: "Raiffeisen ELBA banking automation: login, accounts, transactions."
-version: 1.3.2
+version: 1.3.3
 homepage: https://github.com/odrobnik/raiffeisen-elba-skill
 metadata:
   openclaw:
