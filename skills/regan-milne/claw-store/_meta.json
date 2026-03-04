@@ -1,11 +1,17 @@
 {
   "owner": "regan-milne",
   "slug": "claw-store",
-  "displayName": "Skill",
+  "displayName": "Claw Store",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1772383286784,
-    "commit": "https://github.com/openclaw/skills/commit/e58399563d715e40702df0d3484efb8ef27214c4"
+    "version": "1.0.7",
+    "publishedAt": 1772641917134,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1772383286784,
+      "commit": "https://github.com/openclaw/skills/commit/e58399563d715e40702df0d3484efb8ef27214c4"
+    }
+  ]
 }

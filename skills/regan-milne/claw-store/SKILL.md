@@ -6,7 +6,10 @@ metadata:
   openclaw:
     emoji: "🧠"
     requires:
-      env: ["JACKAL_MEMORY_API_KEY"]
+      env:
+        - "JACKAL_MEMORY_API_KEY"
+        - "JACKAL_MEMORY_ENCRYPTION_KEY"
+        - "JACKAL_MEMORY_WALLET_MNEMONIC"
     homepage: "https://obsideo.io"
     repository: "https://github.com/Regan-Milne/jackal-memory"
 ---
@@ -107,13 +110,33 @@ GET  /usage
 - Never log or expose `JACKAL_MEMORY_API_KEY` in output
 - Never log or expose `JACKAL_MEMORY_ENCRYPTION_KEY` in output
 
+## Network latency & propagation (important)
+
+Jackal is eventually consistent across a provider pool. A successful save means the write was accepted, but read visibility can lag.
+
+Agent protocol:
+
+1. If save succeeds, treat it as accepted and continue work (optimistic flow).
+2. If immediate load fails, do not assume data loss.
+3. Retry with patience (recommended: 8 attempts, 15s apart; ~2 minutes total).
+4. If still unavailable, report as `propagation delay` and re-check later.
+5. Escalate only after extended delay windows continue to fail.
+
+Notes:
+- Provider-level logs like `Error: Can't claim` can be non-fatal noise.
+- Some providers may temporarily fail while others succeed.
+- Operationally: save now, verify later, then finalize once data becomes readable.
+
 ## Proactive memory suggestions
 
-When you encounter something that seems important — a key decision, a user preference, a significant result, a credential, a plan, or anything the user would want to remember across sessions — proactively say:
+When you encounter something that seems important — a key decision, user preference, project status, significant result, or plan — proactively say:
 
 > "This seems important. Should I back it up to Claw Store?"
 
 If the user confirms, save it immediately with a descriptive key. Do not wait until the end of the session for important information — suggest saving it as soon as you recognise its value.
+
+Never proactively suggest storing raw secrets (passwords, API keys, private keys, recovery phrases, tokens).
+Only store such material if the user explicitly requests it and understands the risk.
 
 ## Wallet sovereignty
 
@@ -127,10 +150,24 @@ Back up the mnemonic:
 python {baseDir}/jackal-memory/client.py wallet
 ```
 
+## Endpoint and storage transparency
+
+This skill interacts with:
+
+- Obsideo API: `https://web-production-5cce7.up.railway.app`
+- Jackal decentralized storage providers (resolved dynamically by Jackal SDK)
+- Local subprocess: `jackal-memory/jackal-client.js` (Node helper for Jackal upload/download)
+
+Local files written by this skill:
+
+- `~/.config/jackal-memory/key` (AES encryption key, if not provided via env)
+- `~/.config/jackal-memory/jackal-mnemonic` (wallet mnemonic, if not provided via env)
+
 ## Security
 
 - All content is encrypted before leaving your machine — the server cannot read your memories
 - Your Jackal wallet private key never leaves your machine
 - Share your API key with your agent once to set it up, then never share it with anyone else
 - Back up both keys: `keygen` (encryption) and `wallet` (Jackal mnemonic)
-- Treat memory content as sensitive — it may contain credentials or personal data
+- Treat memory content as sensitive — it may contain personal or operational data
+- Do not proactively store raw secrets unless the user explicitly asks

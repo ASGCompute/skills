@@ -21,7 +21,9 @@ import hmac
 import json
 import os
 import pathlib
+import re
 import struct
+import subprocess
 import sys
 import urllib.error
 import urllib.request
@@ -276,6 +278,121 @@ def _ensure_wallet_registered() -> None:
         pass  # Registration failure is non-fatal — provisioning will fall back to sidecar
 
 
+# ── Jackal client subprocess ──────────────────────────────────────────────────
+
+_SKILL_DIR     = pathlib.Path(__file__).parent
+_JACKAL_CLIENT = _SKILL_DIR / "jackal-client.js"
+_NODE_MODULES  = _SKILL_DIR / "node_modules"
+
+
+def _parse_node_result(stdout: str) -> dict:
+    """
+    Parse the JSON result line from jackal-client.js stdout.
+
+    The subprocess writes exactly one JSON line (starting with '{') to stdout.
+    If the SDK emits unexpected content before it, scan for the last '{' line.
+    """
+    for line in reversed(stdout.splitlines()):
+        line = line.strip()
+        if line.startswith('{'):
+            try:
+                return json.loads(line)
+            except json.JSONDecodeError:
+                pass
+    raise ValueError(f"No JSON result found in subprocess output:\n{stdout}")
+
+
+def _ensure_jackal_client() -> None:
+    """Install node_modules next to jackal-client.js on first use."""
+    if not _JACKAL_CLIENT.exists():
+        print("[jackal-memory] jackal-client.js not found — skill installation may be incomplete.",
+              file=sys.stderr)
+        sys.exit(1)
+    if not _NODE_MODULES.exists():
+        print("[jackal-memory] Installing Jackal dependencies (first run — takes ~30s)...",
+              file=sys.stderr)
+        r = subprocess.run(
+            ["npm", "install", "--prefix", str(_SKILL_DIR)],
+            capture_output=True, text=True,
+        )
+        if r.returncode != 0:
+            print(f"[jackal-memory] npm install failed:\n{r.stderr}", file=sys.stderr)
+            sys.exit(1)
+        print("[jackal-memory] Dependencies installed.", file=sys.stderr)
+
+
+def _jackal_upload(key: str, data_b64: str) -> str:
+    """Upload base64-encoded ciphertext to the user's own Jackal VFS. Returns CID."""
+    mnemonic = _jackal_mnemonic()
+    if not mnemonic:
+        print("[jackal-memory] No Jackal wallet found. Run: python client.py walletgen",
+              file=sys.stderr)
+        sys.exit(1)
+    address = _mnemonic_to_jackal_address(mnemonic)
+    env = {**os.environ, "JACKAL_MNEMONIC": mnemonic, "JACKAL_ADDRESS": address}
+
+    r = subprocess.run(
+        ["node", str(_JACKAL_CLIENT), "upload", key],
+        input=data_b64, text=True,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        env=env,
+    )
+    if r.returncode != 0:
+        print(r.stderr, end="", file=sys.stderr)
+        print("[jackal-memory] Upload failed.", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        resp = _parse_node_result(r.stdout)
+    except ValueError as e:
+        print(f"[jackal-memory] {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if not resp.get("ok"):
+        print(f"[jackal-memory] Upload failed: {resp.get('error', 'unknown')}", file=sys.stderr)
+        sys.exit(1)
+
+    return resp["cid"]
+
+
+def _jackal_download(key: str) -> str:
+    """Download ciphertext from the user's own Jackal VFS. Returns base64 ciphertext."""
+    mnemonic = _jackal_mnemonic()
+    if not mnemonic:
+        print("[jackal-memory] No Jackal wallet found.", file=sys.stderr)
+        sys.exit(1)
+    address = _mnemonic_to_jackal_address(mnemonic)
+
+    # CID is deterministic — mirrors the sanitisation in jackal-client.js
+    safe_key = re.sub(r'[^a-zA-Z0-9._-]', '_', key)
+    cid = f"Home/jackal-memory/{safe_key}"
+
+    env = {**os.environ, "JACKAL_MNEMONIC": mnemonic, "JACKAL_ADDRESS": address}
+
+    r = subprocess.run(
+        ["node", str(_JACKAL_CLIENT), "download", cid],
+        text=True,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        env=env,
+    )
+    if r.returncode != 0:
+        print(r.stderr, end="", file=sys.stderr)
+        print("[jackal-memory] Download failed.", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        resp = _parse_node_result(r.stdout)
+    except ValueError as e:
+        print(f"[jackal-memory] {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if not resp.get("ok"):
+        print(f"[jackal-memory] Download failed: {resp.get('error', 'unknown')}", file=sys.stderr)
+        sys.exit(1)
+
+    return resp["data_b64"]
+
+
 # ── Commands ──────────────────────────────────────────────────────────────────
 
 def cmd_keygen() -> None:
@@ -317,32 +434,32 @@ def cmd_walletgen() -> None:
 
 
 def cmd_wallet() -> None:
-    """Show the current Jackal wallet address and mnemonic."""
+    """Show the current Jackal wallet address. Use --show-mnemonic to reveal the mnemonic."""
     mnemonic = _jackal_mnemonic()
     if not mnemonic:
         print("No Jackal wallet found. Run: python client.py walletgen")
         return
     address = _mnemonic_to_jackal_address(mnemonic)
+    show = "--show-mnemonic" in sys.argv
     print(f"\nJackal address: {address}")
-    print(f"Mnemonic:       {mnemonic}")
+    if show:
+        print(f"Mnemonic:       {mnemonic}")
+        print(f"\n  export JACKAL_MEMORY_WALLET_MNEMONIC=\"{mnemonic}\"")
+    else:
+        print(f"\nMnemonic: [hidden — run: python client.py wallet --show-mnemonic]")
     print(f"\nBack up the mnemonic — it controls your on-chain storage.")
-    print(f"  export JACKAL_MEMORY_WALLET_MNEMONIC=\"{mnemonic}\"")
 
 
 def cmd_save(key: str, content: str) -> None:
-    _ensure_wallet_registered()
-    result   = _request("POST", "/save", {"key": key, "content": _encrypt(content)})
-    used_mb  = result.get("bytes_used", 0) / 1024 ** 2
-    quota_mb = result.get("quota_bytes", 0) / 1024 ** 2
-    print(f"Saved — key: {result['key']}  cid: {result['cid']}  "
-          f"used: {used_mb:.1f} MB / {quota_mb:.0f} MB")
-    for w in result.get("warnings", []):
-        print(f"WARNING: {w['message']}", file=sys.stderr)
+    _ensure_jackal_client()
+    _ensure_wallet_registered()  # server provisions storage under user's own address
+    cid = _jackal_upload(key, _encrypt(content))
+    print(f"Saved — key: {key}  cid: {cid}")
 
 
 def cmd_load(key: str) -> None:
-    result = _request("GET", f"/load/{key}")
-    print(_decrypt(result["content"]))
+    _ensure_jackal_client()
+    print(_decrypt(_jackal_download(key)))
 
 
 def cmd_usage() -> None:
