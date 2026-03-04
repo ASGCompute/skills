@@ -1,0 +1,11 @@
+{
+  "owner": "nissan",
+  "slug": "langfuse-backup",
+  "displayName": "Langfuse Backup",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1772402965399,
+    "commit": null
+  },
+  "history": []
+}
