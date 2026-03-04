@@ -1,0 +1,11 @@
+{
+  "owner": "joe7921",
+  "slug": "agent-deploy",
+  "displayName": "Agent Deploy",
+  "latest": {
+    "version": "2.4.0",
+    "publishedAt": 1772610673354,
+    "commit": null
+  },
+  "history": []
+}
