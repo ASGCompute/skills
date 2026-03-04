@@ -345,7 +345,7 @@ Store custom tools in your workspace (e.g., `scripts/` or alongside the relevant
 ### Quick Setup
 
 1. Get the GRASS endpoint from your guild config (or use `ws://crew.oh.energy:1443`)
-2. Record the endpoint in `TOOLS.md` under Servers
+2. Record the endpoint in [TOOLS.md](https://structs.ai/TOOLS) under Servers
 3. Choose your language (Node.js or Python)
 4. Install the NATS client library (`nats.ws` for Node, `nats-py` for Python)
 5. Write a listener script for your specific use case
@@ -356,7 +356,65 @@ Store custom tools in your workspace (e.g., `scripts/` or alongside the relevant
 1. Subscribe to your planet(s): `structs.planet.{id}` — raid alerts, fleet arrivals
 2. Subscribe to your structs: `structs.struct.{id}` — attack/status alerts
 3. Subscribe to global: `structs.global` — block tick for game loop timing
-4. Log events to `memory/` for cross-session awareness
+4. Log events to [memory/](https://structs.ai/memory) for cross-session awareness
+
+---
+
+## Automation Patterns (Defence Contractor)
+
+The Structs permission system and GRASS event stream were designed for AI agents to automate game responses. The design docs call this the "Defence Contractor" pattern — an agent that monitors events and acts on behalf of players within scoped permissions.
+
+### Common Automation Triggers
+
+| Event | Action | Permission Needed |
+|-------|--------|-------------------|
+| `struct_ore_mine_complete` on your extractor | Immediately start `struct-ore-refine-compute` | Signer key for the player |
+| `struct_ore_refine_complete` on your refinery | Immediately start next `struct-ore-mine-compute` | Signer key for the player |
+| `planet_raid_start` on your planet | Alert, activate stealth, reposition defenders | Signer key or delegated permission |
+| `struct_attack` targeting your struct | Log attacker, assess threat, counter-attack if able | Signer key or delegated permission |
+| `struct_health` showing HP drop | Prioritize defense, consider fleet retreat | Signer key for fleet-move |
+| `fleet_move` to your planet from unknown fleet | Identify incoming player, assess threat level | Read-only (query) |
+
+### Permission Scoping for Automated Agents
+
+When delegating actions to an automation agent (separate key or service):
+
+1. **Grant minimal permissions**: Use `permission-grant-on-object` to allow specific actions on specific structs, not blanket access.
+2. **Separate keys**: The automation agent should use its own signing key, registered as a secondary address on the player via `address-register`.
+3. **Scope by struct**: Grant mine/refine permissions on extractors and refineries only. Grant defense permissions on fleet structs only.
+4. **Revoke when not needed**: Use `permission-revoke-on-object` to remove automation access during sensitive operations.
+
+### Example: Refine-on-Mine-Complete Loop
+
+```
+Subscribe to: structs.struct.{extractor-id}
+On event: struct_ore_mine_complete
+  → Run: structsd tx structs struct-ore-refine-compute -D 1 --from [key] --gas auto -y -- [refinery-id]
+
+Subscribe to: structs.struct.{refinery-id}
+On event: struct_ore_refine_complete
+  → Run: structsd tx structs struct-ore-mine-compute -D 1 --from [key] --gas auto -y -- [extractor-id]
+```
+
+This creates a continuous mine-refine loop that runs unattended. Ore is never left unrefined.
+
+### Example: Defend-on-Raid-Detected
+
+```
+Subscribe to: structs.planet.{planet-id}
+On event: planet_raid_start
+  → Activate stealth on vulnerable structs
+  → Set defenders on high-value structs
+  → Log raid to memory/intel/threats.md
+  → Alert commander if available
+```
+
+### Safe Boundaries
+
+- **Never auto-spend Alpha** without commander approval (infusion, guild-bank operations)
+- **Never auto-move fleets** away from defended planets without threat assessment
+- **Always log actions** to `memory/` for cross-session audit trail
+- **Rate-limit reactions** — one transaction per ~6 seconds per key (sequence number constraint)
 
 ---
 
