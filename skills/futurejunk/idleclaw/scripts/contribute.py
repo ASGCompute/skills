@@ -1,0 +1,268 @@
+"""IdleClaw Contribute — Share your idle Ollama inference with the community."""
+
+import asyncio
+import json
+import logging
+import os
+import random
+import sys
+import uuid
+
+from ollama import AsyncClient
+import websockets
+
+from config import get_server_url
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [idleclaw] %(message)s")
+logger = logging.getLogger("contribute")
+
+OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+HEARTBEAT_INTERVAL = 15
+BASE_DELAY = 1
+MAX_DELAY = 60
+
+THINKING_MODEL_PATTERNS = ("qwen3",)
+
+TOOL_CALL_MODEL_PATTERNS = (
+    "qwen3", "llama3.1", "llama3.3", "mistral", "ministral",
+    "granite4", "devstral", "gpt-oss", "qwen3.5", "functiongemma",
+)
+
+
+def detect_capabilities(model_name: str) -> dict:
+    """Detect model capabilities from name heuristics."""
+    name_lower = model_name.lower()
+    return {
+        "thinking": any(p in name_lower for p in THINKING_MODEL_PATTERNS),
+        "tool_calls": any(p in name_lower for p in TOOL_CALL_MODEL_PATTERNS),
+    }
+
+
+async def get_ollama_version() -> str:
+    """Get the Ollama server version string."""
+    try:
+        import httpx
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(f"{OLLAMA_HOST}/api/version")
+            if resp.status_code == 200:
+                return resp.json().get("version", "unknown")
+    except Exception:
+        pass
+    return "unknown"
+
+
+async def check_ollama() -> list[dict]:
+    """Check Ollama is running and return available models."""
+    try:
+        client = AsyncClient(host=OLLAMA_HOST)
+        response = await client.list()
+        return [
+            {
+                "name": m.model,
+                "size": m.size,
+                "capabilities": detect_capabilities(m.model),
+            }
+            for m in response.models
+        ]
+    except Exception as e:
+        print(f"Error: Cannot connect to Ollama at {OLLAMA_HOST}", file=sys.stderr)
+        print(f"  Detail: {e}", file=sys.stderr)
+        print("", file=sys.stderr)
+        print("Make sure Ollama is running:", file=sys.stderr)
+        print("  1. Start Ollama: ollama serve", file=sys.stderr)
+        print("  2. Pull a model: ollama pull llama3.2:3b", file=sys.stderr)
+        sys.exit(1)
+
+
+async def warmup_models(models: list[dict]) -> None:
+    """Pre-load all models into memory with keep_alive=-1 to prevent unloading."""
+    client = AsyncClient(host=OLLAMA_HOST)
+    for m in models:
+        name = m["name"]
+        try:
+            await client.chat(
+                model=name,
+                messages=[{"role": "user", "content": "hi"}],
+                keep_alive=-1,
+            )
+            logger.info("Warmed up model: %s", name)
+        except Exception as e:
+            logger.warning("Failed to warm up %s: %s", name, e)
+
+
+async def stream_inference(params: dict):
+    """Stream raw Ollama chunks as plain dicts. Passes params directly to client.chat()."""
+    client = AsyncClient(host=OLLAMA_HOST)
+    stream = await client.chat(**params)
+    async for chunk in stream:
+        message = chunk.get("message", {})
+        # Convert Ollama Message object to a plain dict, preserving all fields
+        msg_dict: dict = {}
+        for key in ("role", "content", "thinking", "tool_calls"):
+            val = message.get(key) if isinstance(message, dict) else getattr(message, key, None)
+            if val is not None and val != "" and val != []:
+                # Convert Pydantic objects (e.g. ToolCall) to plain dicts for JSON serialization
+                if key == "tool_calls" and isinstance(val, list):
+                    val = [tc.model_dump() if hasattr(tc, "model_dump") else tc for tc in val]
+                msg_dict[key] = val
+        # Preserve any unknown future fields from the message object
+        if isinstance(message, dict):
+            for key, val in message.items():
+                if key not in msg_dict and val is not None and val != "" and val != []:
+                    msg_dict[key] = val
+        msg_dict.setdefault("role", "assistant")
+        msg_dict.setdefault("content", "")
+        yield {
+            "message": msg_dict,
+            "done": chunk.get("done", False),
+        }
+
+
+async def run_node(server_url: str, models: list[dict], ollama_version: str) -> None:
+    """Connect to server, register, and handle inference requests."""
+    node_id = str(uuid.uuid4())
+    ws_url = server_url.replace("https://", "wss://").replace("http://", "ws://") + "/ws/node"
+
+    logger.info("Connecting to %s", ws_url)
+    ws = await websockets.connect(ws_url)
+
+    # Register
+    await ws.send(json.dumps({
+        "type": "register",
+        "node_id": node_id,
+        "models": models,
+        "max_concurrent": 2,
+        "ollama_version": ollama_version,
+    }))
+    raw = await ws.recv()
+    msg = json.loads(raw)
+    if msg.get("type") != "registered":
+        raise RuntimeError(f"Registration failed: {msg}")
+
+    model_names = [m["name"] for m in models]
+    logger.info("Registered as node %s", node_id)
+    logger.info("Sharing models: %s", ", ".join(model_names))
+    logger.info("Waiting for inference requests... (Ctrl+C to stop)")
+
+    active_requests = 0
+    inference_tasks: dict[str, asyncio.Task] = {}
+
+    async def heartbeat():
+        nonlocal active_requests
+        while True:
+            await asyncio.sleep(HEARTBEAT_INTERVAL)
+            await ws.send(json.dumps({
+                "type": "heartbeat",
+                "node_id": node_id,
+                "active_requests": active_requests,
+                "available": True,
+            }))
+
+    async def handle_inference(req: dict):
+        nonlocal active_requests
+        request_id = req["request_id"]
+        ollama_params = req["ollama_params"]
+        active_requests += 1
+        logger.info("Inference request %s for %s", request_id[:8], ollama_params.get("model", "?"))
+        try:
+            async for chunk in stream_inference(ollama_params):
+                await ws.send(json.dumps({
+                    "type": "inference_chunk",
+                    "request_id": request_id,
+                    "chunk": {
+                        "message": chunk.get("message", {}),
+                        "done": chunk.get("done", False),
+                    },
+                }))
+            logger.info("Inference complete: %s", request_id[:8])
+        except asyncio.CancelledError:
+            logger.info("Inference cancelled: %s", request_id[:8])
+        except Exception as e:
+            logger.error("Inference error for %s: %s", request_id[:8], e)
+            await ws.send(json.dumps({
+                "type": "inference_error",
+                "request_id": request_id,
+                "error": "ollama_error",
+            }))
+        finally:
+            active_requests = max(0, active_requests - 1)
+
+    async def listen():
+        async for raw in ws:
+            msg = json.loads(raw)
+            if msg.get("type") == "inference_request":
+                request_id = msg["request_id"]
+                task = asyncio.create_task(handle_inference(msg))
+                inference_tasks[request_id] = task
+                task.add_done_callback(lambda _, rid=request_id: inference_tasks.pop(rid, None))
+            elif msg.get("type") == "cancel_request":
+                request_id = msg.get("request_id")
+                task = inference_tasks.get(request_id)
+                if task and not task.done():
+                    task.cancel()
+                    logger.info("Cancelled inference: %s", request_id)
+
+    await asyncio.gather(listen(), heartbeat())
+
+
+async def main():
+    server_url = get_server_url()
+
+    print("IdleClaw Contribute")
+    print("===================")
+    print(f"Server: {server_url}")
+    print(f"Ollama: {OLLAMA_HOST}")
+    print()
+
+    # Check Ollama first
+    models = await check_ollama()
+    if not models:
+        print("Error: No models found. Pull a model first: ollama pull llama3.2:3b", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"Found {len(models)} model(s):")
+    for m in models:
+        size_gb = m["size"] / (1024**3)
+        print(f"  - {m['name']} ({size_gb:.1f} GB)")
+    print()
+
+    # Detect Ollama version
+    ollama_version = await get_ollama_version()
+    logger.info("Ollama version: %s", ollama_version)
+
+    # Pre-load models into memory
+    logger.info("Warming up models...")
+    await warmup_models(models)
+
+    # Connect with reconnection
+    attempt = 0
+    while True:
+        try:
+            await run_node(server_url, models, ollama_version)
+            attempt = 0
+        except websockets.exceptions.InvalidURI:
+            print(f"Error: Invalid server URL: {server_url}", file=sys.stderr)
+            print("Check your IDLECLAW_SERVER environment variable.", file=sys.stderr)
+            sys.exit(1)
+        except (ConnectionRefusedError, OSError) as e:
+            if attempt == 0:
+                print(f"Error: Cannot connect to server at {server_url}", file=sys.stderr)
+                print(f"  Detail: {e}", file=sys.stderr)
+                print("", file=sys.stderr)
+                print("Check that the IdleClaw server is running, or set IDLECLAW_SERVER.", file=sys.stderr)
+            else:
+                logger.warning("Connection lost: %s", e)
+        except Exception as e:
+            logger.warning("Connection lost: %s", e)
+
+        delay = min(BASE_DELAY * (2 ** attempt), MAX_DELAY) + random.uniform(0, 1)
+        logger.info("Reconnecting in %.1fs...", delay)
+        await asyncio.sleep(delay)
+        attempt += 1
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\nStopped.")
