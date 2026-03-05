@@ -3,11 +3,16 @@
   "slug": "entity-optimizer",
   "displayName": "Entity Optimizer",
   "latest": {
-    "version": "0.1.1",
-    "publishedAt": 1771042729944,
-    "commit": "https://github.com/openclaw/skills/commit/6814be07d387df7c35e7a1895aa7a09df60938e6"
+    "version": "3.0.0",
+    "publishedAt": 1772640352022,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.1",
+      "publishedAt": 1771042729944,
+      "commit": "https://github.com/openclaw/skills/commit/6814be07d387df7c35e7a1895aa7a09df60938e6"
+    },
     {
       "version": "0.1.0",
       "publishedAt": 1770823831463,
