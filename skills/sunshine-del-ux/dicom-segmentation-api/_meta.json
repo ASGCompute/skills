@@ -1,0 +1,11 @@
+{
+  "owner": "sunshine-del-ux",
+  "slug": "dicom-segmentation-api",
+  "displayName": "Dicom Segmentation Api",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772639325519,
+    "commit": null
+  },
+  "history": []
+}
