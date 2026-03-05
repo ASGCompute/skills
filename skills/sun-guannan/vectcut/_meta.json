@@ -1,0 +1,11 @@
+{
+  "owner": "sun-guannan",
+  "slug": "vectcut",
+  "displayName": "Automate Jianying projects via HTTP curl requests. This skill enables programmatic draft creation, timeline orchestration (arranging media, subtitles, and effects), and triggering automated rendering. Designed for seamless AI video generation and high-volume batch editing workflows.Note: Currently only supports the Chinese version (Jianying). Compatibility for the international version (CapCut) is under active development.",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772679600541,
+    "commit": null
+  },
+  "history": []
+}
