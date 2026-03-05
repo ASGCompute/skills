@@ -1,13 +1,18 @@
 {
   "owner": "odrobnik",
   "slug": "codexmonitor",
-  "displayName": "CodexMonitor",
+  "displayName": "Codexmonitor",
   "latest": {
-    "version": "0.2.1",
-    "publishedAt": 1770964149661,
-    "commit": "https://github.com/openclaw/skills/commit/c497633ce7053071e3d1970441d37c0d4180d095"
+    "version": "0.2.2",
+    "publishedAt": 1772570403147,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.2.1",
+      "publishedAt": 1770964149661,
+      "commit": "https://github.com/openclaw/skills/commit/c497633ce7053071e3d1970441d37c0d4180d095"
+    },
     {
       "version": "0.1.3",
       "publishedAt": 1770831602647,
