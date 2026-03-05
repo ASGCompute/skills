@@ -3,9 +3,15 @@
   "slug": "zxz-test",
   "displayName": "zxz-test",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772612549265,
-    "commit": "https://github.com/openclaw/skills/commit/f8e13c1cf5a8ddd4371d1b1180fc09310f3faedd"
+    "version": "1.0.1",
+    "publishedAt": 1772612859048,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772612549265,
+      "commit": "https://github.com/openclaw/skills/commit/f8e13c1cf5a8ddd4371d1b1180fc09310f3faedd"
+    }
+  ]
 }
