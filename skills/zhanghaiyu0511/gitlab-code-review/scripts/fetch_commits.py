@@ -84,7 +84,7 @@ def get_project_id(headers):
     """Get project ID"""
     encoded_path = urllib.parse.quote(PROJECT_PATH, safe="")
     url = f"{GITLAB_URL}/api/v4/projects/{encoded_path}"
-    response = requests.get(url, headers=headers, timeout=10)
+    response = requests.get(url, headers=headers, timeout=10, proxies={"http": None, "https": None})
     data = response.json()
     if "id" not in data:
         print(f"Error: {data.get('error', 'Unknown error')}")
@@ -97,7 +97,7 @@ def get_commits(project_id, headers, limit=50):
     """Get recent commits"""
     url = f"{GITLAB_URL}/api/v4/projects/{project_id}/repository/commits"
     response = requests.get(
-        url, headers=headers, params={"per_page": limit, "ref_name": BRANCH}, timeout=10
+        url, headers=headers, params={"per_page": limit, "ref_name": BRANCH}, timeout=10, proxies={"http": None, "https": None}
     )
     return response.json()
 
@@ -105,7 +105,7 @@ def get_commits(project_id, headers, limit=50):
 def get_commit_diff(project_id, commit_id, headers):
     """Get commit diff"""
     url = f"{GITLAB_URL}/api/v4/projects/{project_id}/repository/commits/{commit_id}/diff"
-    response = requests.get(url, headers=headers, timeout=10)
+    response = requests.get(url, headers=headers, timeout=10, proxies={"http": None, "https": None})
     return response.json()
 
 

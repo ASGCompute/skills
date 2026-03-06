@@ -3,9 +3,15 @@
   "slug": "gitlab-code-review",
   "displayName": "GitLab Code Review",
   "latest": {
-    "version": "1.0.6",
-    "publishedAt": 1772618694665,
-    "commit": "https://github.com/openclaw/skills/commit/8d322218e5c1caebb33793103c4d2302189ff9b0"
+    "version": "1.2.0",
+    "publishedAt": 1772763576870,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.6",
+      "publishedAt": 1772618694665,
+      "commit": "https://github.com/openclaw/skills/commit/8d322218e5c1caebb33793103c4d2302189ff9b0"
+    }
+  ]
 }
