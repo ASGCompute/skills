@@ -1,14 +1,15 @@
 ---
 name: ima-knowledge-ai
+version: 1.0.3
 description: >
-  IMA Studio content creation knowledge base providing workflow design, model selection, 
-  and parameter optimization guidance. Use when: (1) Planning multi-step IMA content 
-  creation workflows and need to decompose user requests into actionable tasks; 
-  (2) Choosing between ima-voice-ai, ima-image-ai, ima-video-ai models and need 
-  recommendations based on task requirements; (3) Optimizing generation parameters 
-  (resolution, aspect ratio, quality, cost) for specific use cases; (4) Before calling 
-  any ima-*-ai skills to ensure best practices and avoid common mistakes. This skill 
-  provides strategic guidance, not API calls.
+  Critical knowledge base for AI content creation — READ THIS FIRST before any image/video/music 
+  generation task. Provides expert guidance on workflow design, model selection, parameter optimization, 
+  visual consistency, character design, and production best practices. Essential reading before using 
+  ima-image-ai, ima-video-ai, ima-voice-ai, ima-all-ai, or any other media generation skills 
+  (ai-image-generation, ai-video-gen, suno-music, etc.). Use for: planning workflows, choosing models, 
+  optimizing prompts and parameters, maintaining character/style consistency, multi-shot production, 
+  avoiding common mistakes. Transforms beginner attempts into professional-grade results. This is a 
+  knowledge skill — it provides strategic guidance, not API calls.
 ---
 
 # IMA Knowledge AI
@@ -32,7 +33,9 @@ description: >
 
 ## Knowledge Structure
 
-This skill contains 8 reference files:
+This skill contains **12 knowledge modules** (8 standalone + 4 modular directories):
+
+### Core Knowledge (1-8)
 
 ### 1. [workflow-design.md](references/workflow-design.md)
 **When to read**: Complex user requests that need task decomposition
@@ -125,9 +128,57 @@ This skill contains 8 reference files:
 **Usage**: Read index first → Load only relevant scenario file
 
 **Token savings**: 60-85% compared to loading all scenarios
-- Logo consistency requirements (highest level)
-- Color palette management (Primary / Secondary / Neutral / Functional)
-- Complete case study: "Morning Light Coffee" cafe VI (20+ deliverables)
+
+### 10. [color-theory/](references/color-theory/) 🎨 **COLOR THEORY & CULTURAL SENSITIVITY**
+**When to read**: Any design task requiring color selection (logos, posters, brands, products)
+
+**Structure**: Index + 7 modular files (load only what you need)
+
+- `README.md` — Index with quick navigation (5 KB)
+- `color-psychology.md` — 11 major colors' psychology & applications (12 KB) ⭐
+- `color-combinations.md` — 5 pairing principles (2 KB)
+- `industry-guide.md` — 10 industries' color preferences (1 KB)
+- `cultural-differences.md` — 5 regions' basic differences (1 KB)
+- `global-regions.md` — 4 regions' detailed guide (4 KB)
+- `religious-systems.md` — 5 major religions' color symbolism (5 KB)
+- `application-strategy.md` — IMA Studio color decision process (2 KB)
+
+**Usage**: Read index → Load relevant modules based on task (target region/industry/religion)
+
+**Token savings**: 70-90% compared to loading all 32 KB
+
+### 11. [design-pitfalls/](references/design-pitfalls/) 🚫 **DESIGN MISTAKES TO AVOID**
+**When to read**: Quality assurance for generated content (before final delivery)
+
+**Structure**: Index + 4 scenario files (29 common mistakes by scene)
+
+- `README.md` — Index with 5 core principles (3 KB)
+- `logo-design.md` — Logo design pitfalls (10 rules) (7 KB)
+- `poster-banner.md` — Poster/Banner pitfalls (8 rules) (5 KB)
+- `product-ecommerce.md` — Product/E-commerce pitfalls (6 rules) (3 KB)
+- `web-ui.md` — Web/UI pitfalls (5 rules) (3 KB)
+
+**Usage**: Read index → Load scenario-specific pitfalls
+
+**Token savings**: 60-80% compared to loading all 21 KB
+
+### 12. [color-trends-2026/](references/color-trends-2026/) 📅 **2026 COLOR TRENDS**
+**When to read**: Design tasks for 2026 market (stay current with trends)
+
+**Structure**: Index + 5 time/region files (load by current month + target region)
+
+- `README.md` — Index with time-based navigation (6 KB)
+- `annual-colors.md` — Pantone Cloud Dancer / WGSN Teal / China Horse Red (4 KB)
+- `spring-summer.md` — Mar-Aug trends: Cobalt Blue, Violet, Bright Pink (2 KB)
+- `fall-winter.md` — Sep-Feb trends: Dark Luxury theme (1 KB)
+- `regional-differences.md` — China/US/Southeast Asia differences (2 KB)
+- `industry-applications.md` — Tech/Fashion/Food/Beauty/Home (1 KB)
+
+**Usage**: Read index → Load current season + target region
+
+**Token savings**: 75-90% compared to loading all 16 KB
+
+**Auto-loading strategy**: Check current month → Load relevant season file automatically
 
 ---
 
@@ -205,11 +256,13 @@ Step 4: Success! 🎉
 | **"Business card / menu / packaging / signage?"** | **`vi-design.md`** |
 | **"How to ensure brand consistency?"** | **`vi-design.md`** |
 | **"Jewelry ad / skincare ad / perfume ad?"** ⭐⭐⭐ | **`best-practices/`** (index first) |
-| **"Commercial advertising templates?"** | **`best-practices/jewelry|skincare|perfume.md`** |
+| **"Commercial advertising templates?"** | **`best-practices/jewelry\|skincare\|perfume.md`** |
 | **"Cinematic art photography / editorial style?"** | **`best-practices/cinematic-art.md`** |
+| **"What colors for tech/fashion/food brand?"** 🎨 | **`color-theory/`** (index → industry-guide) |
+| **"Color psychology (red/blue/green)?"** | **`color-theory/color-psychology.md`** |
+| **"Cultural sensitivity (China/India/Middle East)?"** | **`color-theory/`** (cultural/religious) |
+| **"Logo design mistakes to avoid?"** 🚫 | **`design-pitfalls/logo-design.md`** |
+| **"Poster/product/web design pitfalls?"** | **`design-pitfalls/`** (index first) |
+| **"2026 color trends / Pantone?"** 📅 | **`color-trends-2026/`** (index → season) |
+| **"Spring/summer vs fall/winter colors?"** | **`color-trends-2026/spring-summer\|fall-winter.md`** |
 
----
-
-**Last Updated**: 2026-03-03  
-**Version**: 1.0.1  
-**Maintainer**: IMA Studio Skills Team

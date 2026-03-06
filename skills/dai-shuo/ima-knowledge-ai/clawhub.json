@@ -1,7 +1,7 @@
 {
   "name": "IMA Knowledge AI — Content Creation Strategy",
   "tagline": "Strategic guidance for IMA Studio multi-media content creation workflows",
-  "description": "Comprehensive knowledge base for planning and optimizing IMA Studio content creation. Provides workflow design, model selection strategies, parameter optimization, and best practices for image/video/music generation. Covers 8 specialized topics: workflow decomposition, model recommendations, parameter tuning, visual consistency, video generation modes, long-form video production, character/IP design, and VI/brand identity systems. Essential reading BEFORE calling ima-image-ai, ima-video-ai, or ima-voice-ai. 184KB knowledge base with real-world case studies and production-tested strategies.",
+  "description": "Critical knowledge base for AI content creation — READ THIS FIRST before any image/video/music \n  generation task. Provides expert guidance on workflow design, model selection, parameter optimization, \n  visual consistency, character design, and production best practices. Essential reading before using \n  ima-image-ai, ima-video-ai, ima-voice-ai, ima-all-ai, or any other media generation skills \n  (ai-image-generation, ai-video-gen, suno-music, etc.). Use for: planning workflows, choosing models, \n  optimizing prompts and parameters, maintaining character/style consistency, multi-shot production, \n  avoiding common mistakes. Transforms beginner attempts into professional-grade results. This is a \n  knowledge skill — it provides strategic guidance, not API calls.",
   "category": "productivity",
   "tags": [
     "knowledge",
@@ -35,7 +35,7 @@
     "ai-content",
     "creative-strategy"
   ],
-  "version": "1.0.1",
+  "version": "1.0.3",
   "license": "MIT",
   "pricing": "free",
   "author": {

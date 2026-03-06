@@ -76,7 +76,7 @@
 | 🥇 **首选** | Nano Banana2 | gemini-3.1-flash-image-preview | 1280 | **#1** | 4 pts | **最高分** 🏆 |
 | 🥈 **次选** | Nano Banana Pro | gemini-3-pro-image-preview | 1233 | #4 | 10-18 pts | 高质量 |
 | 🥉 **经济** | SeeDream 4.5 | seedream-4.5 | 1145 | #15 | 5 pts | 性价比 |
-| ⭐ **特殊** | Midjourney | - | N/A | - | 8-10 pts | 艺术美学强，文字渲染弱 ⚠️ |
+| ⭐ **特殊** | Midjourney | - | N/A | - | 8-10 pts | 美学顶级，**文字渲染极差** ❌ |
 
 **⚠️ OpenAI 模型内容策略警告**:
 - OpenAI (DALL-E) 对真人形象有严格限制
@@ -84,10 +84,16 @@
 - 限制包括：真人照片、名人肖像、照片风格化等
 - 建议优先选择 Google (Nano Banana) 或 ByteDance (SeeDream) 模型
 
-**Midjourney 使用场景** ⚠️:
-- ✅ **适合**: 艺术创作、海报设计、概念图、风格化图像
-- ❌ **不适合**: 需要文字渲染的场景（Logo、海报文字、标题等）
-- **原因**: 美学和艺术感出色，但文字渲染能力较差
+**⚠️ Nano Banana 2 构图提醒**:
+- **问题**: 宽屏（16:9）或方形（1:1）易出现"内容居中 + 周边留白"的嵌套构图
+- **建议**: 生成宽屏/方形时，在 prompt 添加：`full frame composition, filling entire canvas edge-to-edge, seamless integration`
+- **替代**: 对构图要求高 → 选 Nano Banana Pro
+
+**⚠️ Midjourney 文字渲染警告**:
+- **核心**: 美学顶级 ✅，但**文字渲染极差** ❌（无法准确渲染任何文字）
+- **适用**: 纯视觉艺术（无文字需求）- 概念设计、时尚大片、艺术创作
+- **禁用**: Logo、海报文字、产品包装、广告文案、UI 设计
+- **规则**: `if 需要文字 → 不用 Midjourney，改用 SeeDream/Nano Banana Pro`
 
 **默认推荐** (修正后):
 - **最高质量** → **Nano Banana2** (1280分, 排名#1) 🏆 ← **纠正：原错误推荐Pro**
@@ -178,9 +184,9 @@
 
 - [ ] 任务类型已确定
 - [ ] 查询该类型支持的模型
-- [ ] 检查用户偏好 (ima_prefs.json)
-- [ ] 如无偏好 → 选择排行榜最高分模型
-- [ ] 如有偏好 → 使用用户偏好模型
+- [ ] 考虑用户偏好（预算/质量/速度偏好）
+- [ ] 如无特殊偏好 → 选择排行榜最高分模型
+- [ ] 如有明确偏好 → 根据偏好选择对应模型
 
 ---
 

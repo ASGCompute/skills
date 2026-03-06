@@ -63,12 +63,13 @@ Each atomic task should:
    → Input: Script text (as prompt)
    → Output: video_raw.mp4 (URL)
 
-4. External Tool (ffmpeg or video editor)
-   → Merge voiceover.mp3 + video_raw.mp4
-   → Output: final_video.mp4
+4. Post-processing (if needed)
+   → Merge audio and video using editing tools
+   → Apply final adjustments
+   → Output: final video
 
-5. [ima-resource-upload] Upload final video
-   → Input: final_video.mp4 (local file)
+5. [ima-resource-upload] Upload final video (optional)
+   → Input: Completed video file
    → Output: CDN URL (shareable)
 ```
 
@@ -165,8 +166,8 @@ User: "把 [input] 改成 [style/effect]"
 User: "用 [media A] 和 [media B] 做一个 [output]"
 → Generate/obtain media A
 → Generate/obtain media B
-→ External tool to merge (ffmpeg/compositor)
-→ [ima-resource-upload] Upload result
+→ Merge using appropriate editing tools
+→ [ima-resource-upload] Upload result (optional)
 → Done
 ```
 

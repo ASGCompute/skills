@@ -4,6 +4,92 @@ All notable changes to the **IMA Knowledge AI** skill will be documented in this
 
 ---
 
+## [1.0.3] - 2026-03-05
+
+### Changed
+- Optimized skill description
+- Model selection guide: Improved Midjourney and Nano Banana 2 logic
+
+---
+
+## [1.0.2] — 2026-03-04
+
+### 📚 Modular Knowledge Base Expansion
+
+**Major update: Added 68 KB of new knowledge with modular on-demand loading architecture.**
+
+#### Added
+
+**New Modular Knowledge Directories** (contributor: 李鹤, senior designer):
+
+1. **`references/color-theory/`** (32 KB, 8 files)
+   - Color psychology for 11 major colors
+   - 5 color combination principles
+   - Cultural differences (China/US/Japan/India/Middle East + 4 detailed regions)
+   - Religious color systems (5 major religions)
+   - Industry-specific color preferences (10 industries)
+   - IMA Studio color decision strategy
+
+2. **`references/design-pitfalls/`** (21 KB, 5 files)
+   - 29 common design mistakes across 4 scenarios
+   - Logo design pitfalls (10 rules)
+   - Poster/Banner pitfalls (8 rules)
+   - Product/E-commerce pitfalls (6 rules)
+   - Web/UI pitfalls (5 rules)
+
+3. **`references/color-trends-2026/`** (16 KB, 6 files)
+   - 2026 annual representative colors (Pantone Cloud Dancer, WGSN Transformative Teal, China Horse Red)
+   - Spring-Summer trends (Mar-Aug: Cobalt Blue, Violet, Bright Pink)
+   - Fall-Winter trends (Sep-Feb: Dark Luxury theme)
+   - Regional differences (China/US/Southeast Asia)
+   - Industry-specific applications
+
+**Modular Architecture**:
+- Each directory has an index `README.md` with quick navigation
+- Agent loads only relevant modules (60-90% token savings)
+- Relative path linking between modules
+- Time-based and scenario-based loading strategies
+
+#### Changed
+
+- **SKILL.md**: Updated to reference 12 knowledge modules (was 8)
+  - Added sections 10-12 for new modular directories
+  - Expanded Quick Reference table (+7 entries, now 28 total)
+  - Updated version: 1.0.1 → 1.0.2
+  
+- **Total knowledge base**: 116 KB → 184 KB (+68 KB, +59%)
+- **Total files**: 13 → 42 (+29 files)
+
+#### Fixed
+
+- **Security & Compliance**:
+  - Removed brand name "ImaClaw" → generic "评价/建议"
+  - Replaced operational instructions with descriptive guidance (ClawHub security scan compliance)
+  - Removed ffmpeg code snippets → "use video editing tools"
+  - Removed ima_prefs.json file reference → "consider user preferences"
+  - Changed specific tool names → generic descriptions
+  
+- **Documentation**:
+  - All references remain strictly advisory (no operational steps)
+  - Maintained focus on planning and parameter choices
+
+#### Technical Details
+
+**Contributor Credit**: 李鹤 (Senior Designer)
+- 2.5 hours professional knowledge contribution (2026-03-03)
+- 90 KB professional design knowledge
+- Color theory + cultural sensitivity + design pitfalls
+
+**Commit History**:
+- `9837d4f` - Initial 3 documents (64 KB)
+- `198986c` - Modularized color-theory + design-pitfalls
+- `a56c97b` - Modularized color-trends-2026
+- `7301a66` - Updated SKILL.md accessibility
+- `242c67b` - Removed ImaClaw brand name
+- `2960cc1` - Security compliance fixes
+
+---
+
 ## [1.0.1] — 2026-03-03
 
 ### 🔧 ClawHub Release Fixes

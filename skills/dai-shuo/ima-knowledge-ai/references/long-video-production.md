@@ -87,7 +87,7 @@ Shot 3: [场景] + [运镜]
 1. 分镜设计 → 分镜表 (每镜 4-10s)
 2. 生成资产 → 参考图 (人物/场景/道具)
 3. 逐镜生成 → reference_image_to_video
-4. 剪辑拼接 → ffmpeg / 剪辑软件
+4. 剪辑拼接 → 使用视频编辑工具合并镜头
 ```
 
 ### 分镜表模板
@@ -121,20 +121,18 @@ Shot 3: [场景] + [运镜]
 
 ### 拼接方法
 
-**基础拼接** (ffmpeg):
-```bash
-# 创建文件列表
-cat > list.txt << EOF
-file 'shot1.mp4'
-file 'shot2.mp4'
-file 'shot3.mp4'
-EOF
+**基础拼接**: 使用视频编辑工具或命令行工具（如 ffmpeg）将镜头按顺序合并：
+- 创建镜头序列列表
+- 使用 concat 功能无缝拼接
+- 保持视频编码格式一致以避免重新编码
 
-# 无缝拼接
-ffmpeg -f concat -safe 0 -i list.txt -c copy output.mp4
-```
+**进阶技术**: 
+- 添加转场效果（0.5s 淡入淡出）
+- 叠加背景音乐
+- 嵌入字幕或 Logo
+- 调整整体色调和节奏
 
-**进阶**: 添加转场 (0.5s 淡入淡出)、背景音乐、字幕/Logo
+**工具选择**: 专业视频编辑软件（Premiere、DaVinci Resolve）或命令行工具（ffmpeg、mkvmerge）均可实现
 
 ---
 

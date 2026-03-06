@@ -1,11 +1,17 @@
 {
   "owner": "dai-shuo",
   "slug": "ima-knowledge-ai",
-  "displayName": "Ima Knowledge Ai V1.0.1",
+  "displayName": "Ima Knowledge Ai",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1772535914328,
-    "commit": "https://github.com/openclaw/skills/commit/3addd86faaeeac53d9bf1a1a0693d77ec34170cf"
+    "version": "1.0.3",
+    "publishedAt": 1772701441691,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1772535914328,
+      "commit": "https://github.com/openclaw/skills/commit/3addd86faaeeac53d9bf1a1a0693d77ec34170cf"
+    }
+  ]
 }

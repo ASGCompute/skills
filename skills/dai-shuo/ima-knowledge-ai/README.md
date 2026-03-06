@@ -1,28 +1,21 @@
 # IMA Knowledge AI
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](https://git.joyme.sg/imagent/skills/ima-knowledge-ai)
+[![Version](https://img.shields.io/badge/version-1.0.3-blue.svg)](https://git.joyme.sg/imagent/skills/ima-knowledge-ai)
 [![Category](https://img.shields.io/badge/category-productivity-green.svg)](https://clawhub.com)
 
 > **Strategic guidance for IMA Studio multi-media content creation workflows**
 
 ## 🎯 What is This?
 
-**ima-knowledge-ai** is a comprehensive knowledge base that helps AI agents (and humans) make better decisions when creating content with IMA Studio's APIs. It provides strategic guidance on:
-
-- 📋 **Workflow Design** — How to break down complex requests into actionable tasks
-- 🎨 **Model Selection** — Which model to choose based on requirements
-- ⚙️ **Parameter Optimization** — How to set parameters for quality, cost, or speed
-- 🎭 **Visual Consistency** — Maintaining consistency across images/videos
-- 🎬 **Video Production** — Understanding video modes and long-form production
-- 👤 **Character Design** — Creating game/animation characters and IP assets
-- 🏢 **VI Design** — Building comprehensive brand identity systems
+**ima-knowledge-ai** is a comprehensive knowledge base that helps AI agents make better decisions when creating content with IMA Studio's APIs. It provides strategic guidance on workflow design, model selection, parameter optimization, visual consistency, and production best practices.
 
 **Important**: This skill does NOT make API calls — it provides knowledge to use with `ima-image-ai`, `ima-video-ai`, `ima-voice-ai` more effectively.
 
 ---
 
-## 📚 Knowledge Topics (8 files, 184 KB)
+## 📚 Knowledge Structure
+
+### Core Topics (8 files)
 
 | Topic | File | Size | Use When |
 |-------|------|------|----------|
@@ -31,9 +24,20 @@
 | **Parameter Guide** | `parameter-guide.md` | 12 KB | Optimizing generation parameters |
 | **Visual Consistency** | `visual-consistency.md` | 12 KB | Creating series or character designs |
 | **Video Modes** | `video-modes.md` | 31 KB | Understanding video generation modes |
-| **Long Video Production** | `long-video-production.md` | 34 KB | Making 30s-3min videos (10-15s limit workaround) |
+| **Long Video Production** | `long-video-production.md` | 34 KB | Making 30s-3min videos |
 | **Character Design** | `character-design.md` | 22 KB | Game/animation character assets & IP |
 | **VI Design** | `vi-design.md` | 31 KB | Brand identity systems & applications |
+
+### Specialized Directories (4 collections)
+
+| Directory | Contents | Use When |
+|-----------|----------|----------|
+| **best-practices/** | 珠宝、护肤、香水、影视艺术案例 (4 guides) | Industry-specific workflows |
+| **color-theory/** | 色彩心理、搭配、文化差异 (8 guides) | Color selection and psychology |
+| **color-trends-2026/** | 2026 流行色、季节趋势 (5 guides) | Following current color trends |
+| **design-pitfalls/** | Logo、海报、产品、Web 常见错误 (4 guides) | Avoiding common design mistakes |
+
+**Total**: 8 core files + 21 specialized guides = **29 documents, ~220 KB**
 
 ---
 
@@ -46,8 +50,6 @@ clawhub install ima-knowledge-ai
 ```
 
 ### 2. Read Before Acting
-
-When planning IMA Studio content creation:
 
 ```
 User Request → Query ima-knowledge-ai → Make Informed Decision → Call ima-*-ai
@@ -70,233 +72,55 @@ Step 3: Call ima-image-ai with optimized parameters
 
 ---
 
-## 💡 Key Concepts
-
-### Reference-Driven Generation ⭐
-
-**The core methodology** taught across multiple topics:
-
-> Generate a **Master Reference** first → Use it to generate all **Variants**
-
-This applies to:
-- **Video Production** → Master character/scene → Generate all shots
-- **Character Design** → Base design → Turnaround sheets, expressions, outfits
-- **VI Design** → Logo foundation → All application materials
-
-### Visual Consistency = Reference Images
-
-AI models generate **random variations** by default. To maintain consistency:
-
-1. Generate high-quality reference image first
-2. Use `image_to_image` or `reference_image_to_video` modes
-3. Control consistency with `reference_strength` (0.7-0.95)
-
-**Wrong approach** ❌: Generate 10 images hoping they look similar  
-**Right approach** ✅: Generate 1 master → Use it as reference for remaining 9
-
----
-
-## 🎬 Use Cases
-
-### Content Creation
-- 📹 Planning multi-step video production workflows
-- 🎨 Creating character designs for games/animation
-- 🏢 Building comprehensive brand identity systems
-- 📸 Generating consistent image series
-
-### Decision Support
-- 🤔 Choosing the right model for a task
-- 💰 Balancing cost vs. quality trade-offs
-- ⚙️ Optimizing generation parameters
-- 🚫 Avoiding common mistakes and conflicts
-
-### Learning & Best Practices
-- 📖 Understanding IMA Studio API capabilities
-- 💡 Learning production-tested workflows
-- 🎓 Studying real-world case studies
-- 🛡️ Implementing error recovery strategies
-
----
-
-## 📊 Example Scenarios
-
-### Scenario 1: Long Video Production
-
-**User**: "帮我做个1分钟的产品宣传片"
-
-**Knowledge consulted**:
-1. `long-video-production.md` → Learn multi-shot workflow
-2. `video-modes.md` → Understand shot generation modes
-3. `visual-consistency.md` → Maintain product appearance
-
-**Result**: Script → 6 shots (10s each) → Video editing → 1min final output
-
----
-
-### Scenario 2: Character Design
-
-**User**: "设计一个游戏角色,需要正面/侧面/背面视图"
-
-**Knowledge consulted**:
-1. `character-design.md` → Learn turnaround sheet workflow
-2. `visual-consistency.md` → Reference-driven generation
-3. `parameter-guide.md` → Optimal resolution settings
-
-**Result**: Master reference → 3-4 view turnaround sheet → Expression library
-
----
-
-### Scenario 3: Brand Identity
-
-**User**: "给咖啡店做一套VI,包括Logo/名片/菜单/招牌"
-
-**Knowledge consulted**:
-1. `vi-design.md` → Learn VI system structure
-2. `visual-consistency.md` → Maintain brand consistency
-3. `workflow-design.md` → Foundation → Applications flow
-
-**Result**: Logo + color system → 20+ application materials
-
----
-
 ## 🔗 Related Skills
 
-This skill works alongside IMA Studio execution skills:
-
-- **[ima-image-ai](https://git.joyme.sg/imagent/skills/ima-image-ai)** — Image generation (text-to-image, image-to-image)
-- **[ima-video-ai](https://git.joyme.sg/imagent/skills/ima-video-ai)** — Video generation (text-to-video, image-to-video)
-- **[ima-voice-ai](https://git.joyme.sg/imagent/skills/ima-voice-ai)** — Music generation (text-to-music)
+- **[ima-image-ai](https://git.joyme.sg/imagent/skills/ima-image-ai)** — Image generation
+- **[ima-video-ai](https://git.joyme.sg/imagent/skills/ima-video-ai)** — Video generation
+- **[ima-voice-ai](https://git.joyme.sg/imagent/skills/ima-voice-ai)** — Music generation
 - **[ima-all-ai](https://git.joyme.sg/imagent/skills/ima-all-ai)** — Unified multi-media generation
-- **[ima-resource-upload](https://git.joyme.sg/imagent/skills/ima-resource-skill)** — File upload to IMA OSS
 
 ---
 
-## 📖 Documentation
+## 📖 Quick Reference
 
-### Knowledge Base Structure
-
-```
-ima-knowledge-ai/
-├── SKILL.md                          # Skill overview
-├── references/                       # Knowledge files (184 KB)
-│   ├── workflow-design.md           # Task decomposition strategies
-│   ├── model-selection.md           # Model comparison and recommendations
-│   ├── parameter-guide.md           # Parameter optimization guide
-│   ├── visual-consistency.md        # Reference-driven generation
-│   ├── video-modes.md               # Video generation mode reference
-│   ├── long-video-production.md     # Long-form video workflows
-│   ├── character-design.md          # Character/IP design guide
-│   └── vi-design.md                 # VI/brand identity systems
-├── README.md                         # This file
-├── CHANGELOG_CLAWHUB.md             # Version history
-├── LICENSE                           # MIT License
-└── clawhub.json                      # ClawHub metadata
-```
-
-### Quick Reference Table
+### Core Knowledge
 
 | Need | Read This |
 |------|-----------|
-| "How to break down a complex task?" | `workflow-design.md` |
-| "Which model should I use?" | `model-selection.md` |
-| "How to set resolution/aspect ratio?" | `parameter-guide.md` |
-| "Keep visual consistency?" ⭐ | `visual-consistency.md` |
-| "image_to_video vs reference_image_to_video?" | `video-modes.md` |
-| "User wants 30s+ video?" 🎬 | `long-video-production.md` |
-| "Character design / IP development?" 🎨 | `character-design.md` |
-| "VI design / brand identity?" 🏢 | `vi-design.md` |
+| How to break down complex tasks? | `workflow-design.md` |
+| Which model should I use? | `model-selection.md` |
+| How to set resolution/aspect ratio? | `parameter-guide.md` |
+| Keep visual consistency? ⭐ | `visual-consistency.md` |
+| Understand video modes? | `video-modes.md` |
+| Make 30s+ videos? | `long-video-production.md` |
+| Character/IP design? | `character-design.md` |
+| VI/brand identity? | `vi-design.md` |
 
----
+### Specialized Knowledge
 
-## 🎓 Learning Path
-
-### Beginner (First-Time Users)
-1. Start with `workflow-design.md` — Learn task decomposition
-2. Read `model-selection.md` — Understand model capabilities
-3. Study `parameter-guide.md` — Master parameter settings
-
-### Intermediate (Specific Domains)
-- **Image series** → `visual-consistency.md`
-- **Video creation** → `video-modes.md`
-- **Long videos** → `long-video-production.md`
-
-### Advanced (Professional Workflows)
-- **Game/Animation** → `character-design.md`
-- **Branding** → `vi-design.md`
-- **Combined workflows** → All documents
-
----
-
-## 🌟 Key Features
-
-- ✅ **184 KB comprehensive knowledge base** — 8 specialized topics
-- ✅ **Production-tested** — Based on 2026-02-27 IMA Studio API
-- ✅ **Real-world case studies** — Step-by-step workflow examples
-- ✅ **Reference-driven methodology** — Core approach for consistency
-- ✅ **Cost transparency** — Clear credit costs for all recommendations
-- ✅ **No API calls** — Pure strategic guidance
-- ✅ **Complements ima-*-ai** — Works alongside execution skills
-- ✅ **Constantly updated** — Synced with IMA Studio API changes
-
----
-
-## 🛡️ Best Practices
-
-### When to Consult This Skill
-
-**Always consult BEFORE**:
-- Complex multi-step workflows
-- Choosing between multiple models
-- Setting unfamiliar parameters
-- Creating series or consistent characters
-- Producing long-form videos
-- Building brand identity systems
-
-**Optional consult**:
-- Simple one-shot generations
-- Repeating successful patterns
-- Using familiar workflows
-
-### Integration Pattern
-
-```
-Planning Phase:
-  1. Consult ima-knowledge-ai (strategic guidance)
-  2. Make informed decisions (model, parameters, workflow)
-
-Execution Phase:
-  3. Call ima-image-ai / ima-video-ai / ima-voice-ai (API calls)
-  4. Monitor results and iterate if needed
-
-Learning Phase:
-  5. Document successful patterns
-  6. Share feedback for knowledge base improvements
-```
+| Need | Explore This |
+|------|--------------|
+| Industry-specific workflows | `best-practices/` (jewelry, skincare, perfume, cinematic) |
+| Color psychology & selection | `color-theory/` (psychology, combinations, cultural) |
+| 2026 trending colors | `color-trends-2026/` (annual, seasonal, regional) |
+| Common design mistakes | `design-pitfalls/` (logo, poster, product, web) |
 
 ---
 
 ## 📞 Support
 
 - **GitLab Issues**: [ima-knowledge-ai/-/issues](https://git.joyme.sg/imagent/skills/ima-knowledge-ai/-/issues)
-- **ClawHub**: [clawhub.com](https://clawhub.com)
 - **IMA Studio**: [imastudio.com](https://imastudio.com)
 
 ---
 
 ## 📜 License
 
-MIT License — See [LICENSE](LICENSE) file for details.
+MIT License — See LICENSE file for details.
 
 ---
 
-## 🙏 Credits
+**Version**: 1.0.3 (2026-03-05)  
+**API**: IMA Studio Production (2026-02-27)
 
-**Maintained by**: IMA Skills Team  
-**Knowledge Base Version**: 1.0.1 (2026-03-03)  
-**API Version**: IMA Studio Production API (2026-02-27)
-
----
-
-**Remember**: Knowledge is power — but only when applied! 🍵
-
-Use this skill to **plan smarter**, then execute with ima-*-ai skills. Happy creating! 🎨🎬🎵
+**Remember**: Knowledge is power when applied! 🍵
