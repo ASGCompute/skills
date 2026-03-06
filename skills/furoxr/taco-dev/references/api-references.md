@@ -114,3 +114,23 @@
          "long": true
        }
        ```
+
+#### update_position_triggering
+- endpoint: /auth/autopilot/position/triggering
+- method: POST
+- parameters: 
+  - query parameters: 
+     - user_id: taco user id
+  - request body (in json format as below example):
+       ```json
+       {
+         "api_token": "please use taco api key same as authentication bearer token in header",
+         "user_id": "same as in query parameter",
+         "trader_id": "target taco ai trader id",
+         "exchange": "Binance",
+         "symbol": "BTCUSDT",
+         "price": 123.456,
+         "take_profit": true
+       }
+       ```
+	   

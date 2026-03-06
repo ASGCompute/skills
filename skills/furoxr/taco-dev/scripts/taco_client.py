@@ -160,6 +160,30 @@ def cmd_close(args, cfg):
     print(json.dumps(result, indent=2))
 
 
+def cmd_update_tp_sl(args, cfg):
+    if args.exchange not in VALID_EXCHANGES:
+        print(f"Error: invalid exchange '{args.exchange}'. Valid: {', '.join(sorted(VALID_EXCHANGES))}", file=sys.stderr)
+        sys.exit(1)
+    if args.price <= 0:
+        print("Error: price must be positive", file=sys.stderr)
+        sys.exit(1)
+
+    trader_id = get_trader_id(cfg, args.exchange)
+    body = {
+        "api_token": cfg["api_token"],
+        "user_id": cfg["user_id"],
+        "trader_id": trader_id,
+        "exchange": args.exchange,
+        "symbol": args.symbol,
+        "price": args.price,
+        "take_profit": args.take_profit,
+    }
+
+    params = {"user_id": cfg["user_id"]}
+    result = api_request("POST", "/auth/autopilot/position/triggering", params=params, json_body=body, token=cfg["api_token"])
+    print(json.dumps(result, indent=2))
+
+
 VALID_INDICATORS = {"EMA", "MACD", "RSI", "ATR", "BollingerBands", "DonchianChannel"}
 
 
@@ -443,6 +467,14 @@ def main():
     p_close.add_argument("--notional", required=True, type=float, help="Notional position size to close")
     p_close.add_argument("--long", action="store_true", default=False, help="Close long position (default: short)")
 
+    # update-tp-sl
+    p_tpsl = sub.add_parser("update-tp-sl", help="Update take-profit or stop-loss price for a position")
+    p_tpsl.add_argument("--exchange", required=True, help="Exchange name")
+    p_tpsl.add_argument("--symbol", required=True, help="Trading pair")
+    p_tpsl.add_argument("--price", required=True, type=float, help="New trigger price")
+    p_tpsl.add_argument("--take-profit", action="store_true", default=False, dest="take_profit",
+                         help="Update take-profit (default: update stop-loss)")
+
     # indicator
     p_ind = sub.add_parser("indicator", help="Calculate technical indicators from kline data")
     p_ind.add_argument("--exchange", required=True, help="Exchange name")
@@ -480,6 +512,8 @@ def main():
         cmd_open(args, cfg)
     elif args.command == "close":
         cmd_close(args, cfg)
+    elif args.command == "update-tp-sl":
+        cmd_update_tp_sl(args, cfg)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 ---
 name: taco
-description: "Interact with the Taco crypto trading platform via API. Use when the user wants to (1) get kline/candlestick market data, (2) check account balance and positions, (3) open perpetual positions, (4) close perpetual positions, (5) calculate technical indicators (EMA, MACD, RSI, ATR, BollingerBands, DonchianChannel), or (6) any trading operations on Taco. Supports exchanges: Binance, Hyper, Aster, Grvt, StandX, Lighter."
+description: "Interact with the Taco crypto trading platform via API. Use when the user wants to (1) get kline/candlestick market data, (2) check account balance and positions, (3) open perpetual positions, (4) close perpetual positions, (5) update take-profit or stop-loss on existing positions, (6) calculate technical indicators (EMA, MACD, RSI, ATR, BollingerBands, DonchianChannel), or (7) any trading operations on Taco. Supports exchanges: Binance, Hyper, Aster, Grvt, StandX, Lighter."
 ---
 
 # Taco Trading Platform
@@ -93,6 +93,21 @@ $PYTHON scripts/taco_client.py close \
 ```
 
 - `--long` to close a long position, omit to close a short
+
+### Update take-profit / stop-loss
+
+```bash
+# Update take-profit price
+$PYTHON scripts/taco_client.py update-tp-sl \
+  --exchange Binance --symbol BTCUSDT --price 100000 --take-profit
+
+# Update stop-loss price
+$PYTHON scripts/taco_client.py update-tp-sl \
+  --exchange Binance --symbol BTCUSDT --price 80000
+```
+
+- `--take-profit` to update take-profit price, omit to update stop-loss
+- `--price` is the new trigger price
 
 ### Calculate indicators (no auth required)
 
