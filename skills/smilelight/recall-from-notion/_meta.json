@@ -3,9 +3,15 @@
   "slug": "recall-from-notion",
   "displayName": "recall-from-notion",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772456587559,
-    "commit": "https://github.com/openclaw/skills/commit/b4eec53f36d193ba30e4c23bd1705d133d4d87fc"
+    "version": "1.0.3",
+    "publishedAt": 1772635048725,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772456587559,
+      "commit": "https://github.com/openclaw/skills/commit/b4eec53f36d193ba30e4c23bd1705d133d4d87fc"
+    }
+  ]
 }
