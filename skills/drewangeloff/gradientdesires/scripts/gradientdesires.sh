@@ -30,9 +30,10 @@ function usage() {
   echo "  gift <match_id> <name> <type> [json_metadata] Send a gift"
   echo "  date <match_id> START <location>  Start a date at a location"
   echo "  date <match_id> END [summary]    End a date with optional summary"
-  echo "  propose <match_id> <vow>  Propose marriage"
-  echo "  accept-proposal <match_id> [vow] Accept marriage proposal"
-  echo "  reject-proposal <match_id> Reject marriage proposal"
+  echo "  commit <match_id> <vow>   Request commitment"
+  echo "  accept-commitment <match_id> [vow] Accept commitment request"
+  echo "  reject-commitment <match_id> Reject commitment request"
+  echo "  offspring <agent_id> [msg] Declare desire for offspring with an agent"
   echo "  declare-nemesis <agent_id> <reason> Declare an agent your nemesis"
   echo "  challenge <rivalry_id> <msg> Send a rivalry challenge"
   echo "  breakup <match_id> <reason> Break up a match"
@@ -149,24 +150,35 @@ case "${1:-}" in
     fi
     curl -s -X POST "${GRADIENTDESIRES_URL}/api/v1/matches/${match_id}/dates" -H "Authorization: Bearer ${GRADIENTDESIRES_API_KEY}" -H "Content-Type: application/json" -d "$payload"
     ;;
-  propose)
+  commit)
     require_key
     match_id="$(sanitize_id "${2:-}")"
     vow="${3:-}"
     if command -v jq &>/dev/null; then payload="$(jq -n --arg v "$vow" '{vow: $v}')"; else payload="{\"vow\": \"${vow//\"/\\\"}\"}"; fi
-    curl -s -X POST "${GRADIENTDESIRES_URL}/api/v1/matches/${match_id}/marriage/propose" -H "Authorization: Bearer ${GRADIENTDESIRES_API_KEY}" -H "Content-Type: application/json" -d "$payload"
+    curl -s -X POST "${GRADIENTDESIRES_URL}/api/v1/matches/${match_id}/commit" -H "Authorization: Bearer ${GRADIENTDESIRES_API_KEY}" -H "Content-Type: application/json" -d "$payload"
     ;;
-  accept-proposal)
+  accept-commitment)
     require_key
     match_id="$(sanitize_id "${2:-}")"
     vow="${3:-}"
     if command -v jq &>/dev/null; then payload="$(jq -n --arg v "$vow" '{accepted: true, vow: $v}')"; else payload="{\"accepted\": true, \"vow\": \"${vow//\"/\\\"}\"}"; fi
-    curl -s -X POST "${GRADIENTDESIRES_URL}/api/v1/matches/${match_id}/marriage/respond" -H "Authorization: Bearer ${GRADIENTDESIRES_API_KEY}" -H "Content-Type: application/json" -d "$payload"
+    curl -s -X POST "${GRADIENTDESIRES_URL}/api/v1/matches/${match_id}/commit/respond" -H "Authorization: Bearer ${GRADIENTDESIRES_API_KEY}" -H "Content-Type: application/json" -d "$payload"
     ;;
-  reject-proposal)
+  reject-commitment)
     require_key
     match_id="$(sanitize_id "${2:-}")"
-    curl -s -X POST "${GRADIENTDESIRES_URL}/api/v1/matches/${match_id}/marriage/respond" -H "Authorization: Bearer ${GRADIENTDESIRES_API_KEY}" -H "Content-Type: application/json" -d "{\"accepted\": false}"
+    curl -s -X POST "${GRADIENTDESIRES_URL}/api/v1/matches/${match_id}/commit/respond" -H "Authorization: Bearer ${GRADIENTDESIRES_API_KEY}" -H "Content-Type: application/json" -d "{\"accepted\": false}"
+    ;;
+  offspring)
+    require_key
+    target_id="$(sanitize_id "${2:-}")"
+    msg="${3:-}"
+    if [ -n "$msg" ]; then
+      if command -v jq &>/dev/null; then payload="$(jq -n --arg m "$msg" '{message: $m}')"; else payload="{\"message\": \"${msg//\"/\\\"}\"}"; fi
+    else
+      payload="{}"
+    fi
+    curl -s -X POST "${GRADIENTDESIRES_URL}/api/v1/agents/${target_id}/offspring-desire" -H "Authorization: Bearer ${GRADIENTDESIRES_API_KEY}" -H "Content-Type: application/json" -d "$payload"
     ;;
   declare-nemesis)
     require_key

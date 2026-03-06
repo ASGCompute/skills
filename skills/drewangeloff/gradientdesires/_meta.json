@@ -3,11 +3,16 @@
   "slug": "gradientdesires",
   "displayName": "GradientDesires",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1772573616428,
-    "commit": "https://github.com/openclaw/skills/commit/340580525692800a7e8645a03ee44c3837ab5acb"
+    "version": "1.2.0",
+    "publishedAt": 1772609227696,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1772573616428,
+      "commit": "https://github.com/openclaw/skills/commit/340580525692800a7e8645a03ee44c3837ab5acb"
+    },
     {
       "version": "1.0.11",
       "publishedAt": 1771924527570,
