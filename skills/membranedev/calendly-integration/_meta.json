@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "calendly-integration",
+  "displayName": "Calendly",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772690541393,
+    "commit": null
+  },
+  "history": []
+}
