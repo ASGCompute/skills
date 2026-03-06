@@ -579,13 +579,18 @@ def create_task(base_url: str, api_key: str,
     if input_images is None:
         input_images = []
 
-    # Smart credit_rule selection based on user params
+    # Smart credit_rule selection based on merged params (form defaults + user overrides)
+    # 🔧 FIX: Always try to match credit_rule based on actual parameters (not just user params)
+    # This fixes Nano Banana 2 defaulting to 512px rule when form_config defaults to 1K
     all_rules = model_params.get("all_credit_rules", [])
-    if extra_params and all_rules:
+    if all_rules:
+        # Merge form_config defaults + user overrides (user params take priority)
+        merged_params = {**model_params["form_params"], **(extra_params or {})}
+        
         # Extract params that might be in attributes
         # CRITICAL: ONLY include keys that actually appear in credit_rules.attributes
         # Image credit_rules.attributes: size, quality, n
-        candidate_params = {k: v for k, v in extra_params.items() 
+        candidate_params = {k: v for k, v in merged_params.items() 
                           if k in ["size", "quality", "n"]}
         # ⚠️ REMOVED: resolution, sample_image_size (form_config defaults, not in attributes)
         if candidate_params:

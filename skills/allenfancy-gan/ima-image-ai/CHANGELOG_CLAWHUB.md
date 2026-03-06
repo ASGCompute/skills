@@ -5,6 +5,33 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), version
 
 ---
 
+## v1.0.3 (2026-03-03) — Knowledge Base Integration
+
+### 🎓 Improved Agent Decision-Making
+
+**Added mandatory knowledge base consultation to improve visual consistency and workflow planning.**
+
+#### Added
+- **YAML Description Warning**: Added prominent warning to read `ima-knowledge-ai` skill first
+  - Especially `visual-consistency.md` for series/character generation
+- **MANDATORY PRE-CHECK Section**: New section before main content with:
+  - Visual consistency check triggers (keywords: "系列", "多张", "同一个", "角色", etc.)
+  - Workflow/model/parameter guidance references
+  - Why this matters explanation
+  - Example failure case (旺财 inconsistency)
+  - Pseudo-code for proper workflow
+
+#### Changed
+- Version bumped from v1.0.2 to v1.0.3
+
+#### Why This Change?
+
+Knowledge skills have unclear trigger logic compared to functional skills. By embedding knowledge references directly in atomic skills, agents are more likely to consult the knowledge base before execution, avoiding common mistakes like generating visually inconsistent results for series/character tasks.
+
+**Test feedback**: Modification improves agent knowledge usage. ⭐⭐⭐⭐⭐
+
+---
+
 ## v1.0.2 (2026-02-28) — Security Transparency Update
 
 ### 🔒 Security & Documentation Improvements

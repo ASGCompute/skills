@@ -1,25 +1,75 @@
 ---
 name: IMA Studio Image Generation
-version: 1.0.2
+version: 1.0.3
 category: file-generation
 author: IMA Studio (imastudio.com)
 keywords: imastudio, image generation, text to image, midjourney
 argument-hint: "[text prompt or image URL]"
 description: >
-  Use for AI image generation via IMA Open API. Supports text-to-image and image-to-image.
-  IMPORTANT — Default model selection rule: always recommend the NEWEST and most POPULAR model,
-  NOT the cheapest. Default for text_to_image: SeeDream 4.5 (doubao-seedream-4.5, 5pts) — latest
-  doubao flagship, balanced choice. Budget option: Nano Banana2 (gemini-3.1-flash-image, 4pts) —
-  fastest and cheapest. Premium: Nano Banana Pro (gemini-3-pro-image, 10-18pts) — premium quality
-  with size options (1K/2K/4K). NEW: Midjourney (midjourney, 8-10pts) — artist-level aesthetics.
-  Default for image_to_image: SeeDream 4.5 (doubao-seedream-4.5, 5pts, attribute_id 1611).
-  Production environment has 4 available models. All text_to_image models (4): SeeDream 4.5 (5pts),
-  Nano Banana2 (4pts), Nano Banana Pro (10/10/18pts for 1K/2K/4K), Midjourney (8-10pts for 480p/720p).
-  All image_to_image models (4): SeeDream 4.5 (5pts), Nano Banana2 (4pts), Nano Banana Pro (10pts),
-  Midjourney (8-10pts). Requires an ima_* API key.
+  ⚠️ BEFORE using this skill: READ ima-knowledge-ai skill FIRST! Especially visual-consistency.md
+  for series/character generation. Use for AI image generation via IMA Open API. Supports 
+  text-to-image and image-to-image. IMPORTANT — Default model selection rule: always recommend 
+  the NEWEST and most POPULAR model, NOT the cheapest. Default for text_to_image: SeeDream 4.5 
+  (doubao-seedream-4.5, 5pts) — latest doubao flagship, balanced choice. Budget option: Nano 
+  Banana2 (gemini-3.1-flash-image, 4pts) — fastest and cheapest. Premium: Nano Banana Pro 
+  (gemini-3-pro-image, 10-18pts) — premium quality with size options (1K/2K/4K). NEW: Midjourney 
+  (midjourney, 8-10pts) — artist-level aesthetics. Default for image_to_image: SeeDream 4.5 
+  (doubao-seedream-4.5, 5pts, attribute_id 1611). Production environment has 4 available models. 
+  All text_to_image models (4): SeeDream 4.5 (5pts), Nano Banana2 (4pts), Nano Banana Pro 
+  (10/10/18pts for 1K/2K/4K), Midjourney (8-10pts for 480p/720p). All image_to_image models (4): 
+  SeeDream 4.5 (5pts), Nano Banana2 (4pts), Nano Banana Pro (10pts), Midjourney (8-10pts). 
+  Requires an ima_* API key.
 ---
 
 # IMA Image AI Creation
+
+## ⚠️ MANDATORY PRE-CHECK: Read Knowledge Base First!
+
+**BEFORE executing ANY image generation task, you MUST:**
+
+1. **Check for visual consistency needs** — Read `ima-knowledge-ai/visual-consistency.md` if:
+   - User mentions: "系列"、"多张"、"同一个"、"角色"、"续"、"series"、"same"
+   - Task involves: multiple images, character actions, product shots, video stills
+   - Second+ request about same subject (e.g., "旺财在游泳" after "生成旺财照片")
+
+2. **Check workflow/model/parameters** — Read relevant `ima-knowledge-ai` sections if:
+   - Complex multi-step task
+   - Unsure which model to use
+   - Need parameter guidance (resolution, aspect ratio, etc.)
+
+**Why this matters:**
+- AI generation defaults to **独立生成** (independent generation) each time
+- Without reference images, "same character/product" will look different
+- **Text-to-image CANNOT maintain visual consistency** — must use image-to-image with reference
+
+**Example failure case:**
+```
+User: "生成一只小狗，叫旺财" 
+  → You: generate dog image A
+
+User: "生成旺财在游泳的视频"
+  → ❌ Wrong: generate new dog (looks different)
+  → ✅ Right: read visual-consistency.md → use image A as reference
+```
+
+**How to check:**
+```python
+# Step 1: Read knowledge base
+read("~/.openclaw/skills/ima-knowledge-ai/references/visual-consistency.md")
+
+# Step 2: Identify if reference image needed
+if "same subject" or "series" or "character":
+    # Use image-to-image with previous result as reference
+    reference_image = previous_generation_result
+    use_image_to_image(prompt, reference_image, reference_strength=0.8)
+else:
+    # OK to use text-to-image
+    use_text_to_image(prompt)
+```
+
+**No exceptions** — if you skip this check and generate visually inconsistent results, that's a bug.
+
+---
 
 ## 💬 User Experience Protocol (IM / Feishu / Discord) v1.3 🆕
 
