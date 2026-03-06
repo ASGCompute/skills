@@ -3,11 +3,16 @@
   "slug": "clawusage-windows-hardlock",
   "displayName": "ClawUsage Windows Hardlock",
   "latest": {
-    "version": "0.1.8",
-    "publishedAt": 1772608411473,
-    "commit": "https://github.com/openclaw/skills/commit/1b4b669617cc13e3c2c624f32fde9a7c2fdbaaab"
+    "version": "0.2.1",
+    "publishedAt": 1772682371117,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.8",
+      "publishedAt": 1772608411473,
+      "commit": "https://github.com/openclaw/skills/commit/1b4b669617cc13e3c2c624f32fde9a7c2fdbaaab"
+    },
     {
       "version": "0.1.4",
       "publishedAt": 1772503564714,
