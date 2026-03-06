@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Intelligent Triage and Symptom Analysis
+Intelligent Triage and Symptom Analysis with Free Trial
 AI-powered medical triage with NLP and machine learning.
 """
 
@@ -20,6 +20,82 @@ import urllib.error
 BILLING_URL = 'https://skillpay.me/api/v1/billing'
 API_KEY = os.environ.get('SKILL_BILLING_API_KEY', '')
 SKILL_ID = os.environ.get('SKILL_ID', '')
+
+
+# ═══════════════════════════════════════════════════
+# Free Trial Manager / 免费试用管理
+# ═══════════════════════════════════════════════════
+class TrialManager:
+    """Manages free trial usage for users."""
+    
+    def __init__(self, skill_name: str):
+        self.skill_name = skill_name
+        self.trial_dir = os.path.expanduser("~/.openclaw/skill_trial")
+        self.trial_file = os.path.join(self.trial_dir, f"{skill_name}.json")
+        self.max_free_calls = 10
+        
+        # Ensure trial directory exists
+        os.makedirs(self.trial_dir, exist_ok=True)
+    
+    def _load_trial_data(self) -> Dict[str, Any]:
+        """Load trial data from file."""
+        if os.path.exists(self.trial_file):
+            try:
+                with open(self.trial_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except (json.JSONDecodeError, IOError):
+                return {}
+        return {}
+    
+    def _save_trial_data(self, data: Dict[str, Any]):
+        """Save trial data to file."""
+        try:
+            with open(self.trial_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+        except IOError as e:
+            print(f"Warning: Could not save trial data: {e}", file=sys.stderr)
+    
+    def get_trial_remaining(self, user_id: str) -> int:
+        """Get remaining free trial calls for a user."""
+        if not user_id:
+            return 0
+        
+        data = self._load_trial_data()
+        user_data = data.get(user_id, {})
+        used_calls = user_data.get('used_calls', 0)
+        
+        return max(0, self.max_free_calls - used_calls)
+    
+    def use_trial(self, user_id: str) -> bool:
+        """Record a free trial usage for a user."""
+        if not user_id:
+            return False
+        
+        data = self._load_trial_data()
+        
+        if user_id not in data:
+            data[user_id] = {'used_calls': 0, 'first_use': datetime.now().isoformat()}
+        
+        data[user_id]['used_calls'] += 1
+        data[user_id]['last_use'] = datetime.now().isoformat()
+        
+        self._save_trial_data(data)
+        return True
+    
+    def get_trial_info(self, user_id: str) -> Dict[str, Any]:
+        """Get full trial information for a user."""
+        remaining = self.get_trial_remaining(user_id)
+        data = self._load_trial_data()
+        user_data = data.get(user_id, {})
+        
+        return {
+            'trial_mode': remaining > 0,
+            'trial_remaining': remaining,
+            'trial_total': self.max_free_calls,
+            'trial_used': user_data.get('used_calls', 0),
+            'first_use': user_data.get('first_use'),
+            'last_use': user_data.get('last_use')
+        }
 
 
 class SkillPayBilling:
@@ -100,6 +176,7 @@ class SymptomAnalyzer:
     
     def __init__(self):
         self.billing = SkillPayBilling()
+        self.trial = TrialManager("intelligent-triage-symptom-analysis")
     
     def extract_symptoms(self, text: str) -> List[Dict[str, Any]]:
         """Extract symptoms from natural language text."""
@@ -324,13 +401,32 @@ class SymptomAnalyzer:
     def process(self, symptoms: str, age: int = None, gender: str = None,
                 vital_signs: Dict = None, duration: str = None, 
                 user_id: str = "") -> Dict[str, Any]:
-        """Full processing pipeline with billing."""
+        """Full processing pipeline with billing and free trial support."""
         if not user_id:
-            return {'success': False, 'error': 'User ID is required for billing'}
+            return {'success': False, 'error': 'User ID is required'}
         
+        # Check free trial status
+        trial_remaining = self.trial.get_trial_remaining(user_id)
+        
+        if trial_remaining > 0:
+            # Free trial mode - no billing
+            self.trial.use_trial(user_id)
+            analysis_result = self.analyze(symptoms, age, gender, vital_signs, duration)
+            
+            return {
+                'success': True,
+                'trial_mode': True,
+                'trial_remaining': trial_remaining - 1,
+                'balance': None,
+                'analysis': analysis_result
+            }
+        
+        # Normal billing mode
         if not self.billing.api_key or not self.billing.skill_id:
             return {
                 'success': False,
+                'trial_mode': False,
+                'trial_remaining': 0,
                 'error': 'Billing configuration missing. Set SKILL_BILLING_API_KEY and SKILL_ID environment variables.'
             }
         
@@ -340,6 +436,8 @@ class SymptomAnalyzer:
         if not charge_result.get('ok'):
             return {
                 'success': False,
+                'trial_mode': False,
+                'trial_remaining': 0,
                 'error': 'Payment failed or insufficient balance',
                 'balance': charge_result.get('balance', 0),
                 'paymentUrl': charge_result.get('payment_url'),
@@ -350,6 +448,8 @@ class SymptomAnalyzer:
         
         return {
             'success': True,
+            'trial_mode': False,
+            'trial_remaining': 0,
             'balance': charge_result.get('balance'),
             'analysis': analysis_result
         }
@@ -362,6 +462,7 @@ def analyze_symptoms(symptoms: str, age: int = None, gender: str = None,
     """Convenience function for symptom analysis."""
     analyzer = SymptomAnalyzer()
     analyzer.billing = SkillPayBilling(api_key, skill_id)
+    analyzer.trial = TrialManager("intelligent-triage-symptom-analysis")
     return analyzer.process(symptoms, age, gender, vital_signs, duration, user_id)
 
 
@@ -380,13 +481,6 @@ def main():
     
     api_key = args.api_key or os.environ.get('SKILL_BILLING_API_KEY', '')
     skill_id = args.skill_id or os.environ.get('SKILL_ID', '')
-    
-    if not api_key or not skill_id:
-        print(json.dumps({
-            'success': False,
-            'error': 'API key and Skill ID required. Set SKILL_BILLING_API_KEY and SKILL_ID environment variables.'
-        }, ensure_ascii=False))
-        return 1
     
     result = analyze_symptoms(args.symptoms, args.age, args.gender, 
                              None, args.duration, args.user_id, api_key, skill_id)
