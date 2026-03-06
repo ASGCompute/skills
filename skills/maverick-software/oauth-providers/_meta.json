@@ -1,0 +1,11 @@
+{
+  "owner": "maverick-software",
+  "slug": "oauth-providers",
+  "displayName": "OAuth Providers",
+  "latest": {
+    "version": "1.1.0",
+    "publishedAt": 1772764515417,
+    "commit": null
+  },
+  "history": []
+}
