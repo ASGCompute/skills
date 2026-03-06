@@ -258,10 +258,15 @@ services = [
 
 # Chatbot 启动
 chatbot_setup = os.path.join(PROJECT_ROOT, "chatbot", "setup.py")
+is_headless = os.getenv("MINI_TIMEBOT_HEADLESS", "0") == "1"
 if os.path.exists(chatbot_setup):
-    print(f"💬 [4/5] 启动聊天机器人...")
-    chatbot_dir = os.path.join(PROJECT_ROOT, "chatbot")
-    subprocess.run([venv_python, "setup.py"], cwd=chatbot_dir)
+    if is_headless:
+        print(f"💬 [4/5] 跳过聊天机器人交互式配置（headless 模式）")
+        print(f"   提示: 如需配置 chatbot，请在人工模式下运行 run.sh 或手动编辑 config/.env")
+    else:
+        print(f"💬 [4/5] 启动聊天机器人...")
+        chatbot_dir = os.path.join(PROJECT_ROOT, "chatbot")
+        subprocess.run([venv_python, "setup.py"], cwd=chatbot_dir)
     services.append((f"🌐 [5/5] 启动前端 Web UI (port {PORT_FRONTEND})...", "src/front.py", 1))
 else:
     services.append((f"🌐 [4/4] 启动前端 Web UI (port {PORT_FRONTEND})...", "src/front.py", 1))

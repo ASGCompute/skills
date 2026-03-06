@@ -42,6 +42,7 @@ case "${1:-help}" in
         fi
 
         echo "🚀 启动 Mini TimeBot (headless)..."
+        export MINI_TIMEBOT_HEADLESS=1
         mkdir -p "$PROJECT_ROOT/logs"
         nohup python scripts/launcher.py > "$PROJECT_ROOT/logs/launcher.log" 2>&1 &
         LAUNCHER_PID=$!

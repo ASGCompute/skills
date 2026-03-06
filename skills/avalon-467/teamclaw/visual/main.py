@@ -189,6 +189,8 @@ def _node_yaml_name(node: dict, use_bot_session: bool = False) -> str:
     For expert nodes:
       - use_bot_session=False → "tag#temp#<instance>" (stateless ExpertAgent)
       - use_bot_session=True  → "tag#oasis#new"       (stateful SessionExpert)
+    For external nodes:
+      - "tag#ext#<ext_id>"  (external API agent)
     For session_agent nodes:
       - "title#session_id#<instance>" when instance > 1 (multiple uses of same session)
       - "title#session_id"            when instance == 1
@@ -196,10 +198,21 @@ def _node_yaml_name(node: dict, use_bot_session: bool = False) -> str:
     inst = node.get("instance", 1)
     node_type = node.get("type", "expert")
 
+    if node_type == "external":
+        tag = node.get("tag", "custom")
+        ext_id = node.get("ext_id", "1")
+        return f"{tag}#ext#{ext_id}"
+
     if node_type == "session_agent":
-        title = node.get("name", "Agent")
+        title = node.get("name", "Agent")[:7]
         sid = node.get("session_id", "")
         if sid:
+            # Oasis sessions already have the format "tag#oasis#id",
+            # so don't prepend title to avoid breaking tag resolution.
+            if "#oasis#" in sid:
+                if inst > 1:
+                    return f"{sid}#{inst}"
+                return sid
             if inst > 1:
                 return f"{title}#{sid}#{inst}"
             return f"{title}#{sid}"
@@ -248,6 +261,17 @@ def layout_to_yaml(data: dict) -> str:
     use_bot_session = settings.get("use_bot_session", False)
     node_map = {n["id"]: n for n in nodes}
 
+    def _make_expert_step(node):
+        """Build a plan step dict for an expert/external node."""
+        step = {"expert": _node_yaml_name(node, use_bot_session)}
+        if node.get("type") == "external":
+            for _ek in ("api_url", "api_key", "model"):
+                if node.get(_ek):
+                    step[_ek] = node[_ek]
+            if node.get("headers") and isinstance(node["headers"], dict):
+                step["headers"] = node["headers"]
+        return step
+
     plan = []
 
     # Step 1: Process explicit groups (user-drawn circles/clusters)
@@ -260,9 +284,17 @@ def layout_to_yaml(data: dict) -> str:
         if group_type == "all":
             plan.append({"all_experts": True})
         elif group_type == "parallel":
-            member_names = [_node_yaml_name(node_map[nid], use_bot_session) for nid in member_ids if nid in node_map]
-            if member_names:
-                plan.append({"parallel": member_names})
+            par_items = []
+            for nid in member_ids:
+                if nid not in node_map:
+                    continue
+                mn = node_map[nid]
+                if mn.get("type") == "external":
+                    par_items.append(_make_expert_step(mn))
+                else:
+                    par_items.append(_node_yaml_name(mn, use_bot_session))
+            if par_items:
+                plan.append({"parallel": par_items})
         elif group_type == "manual":
             content = group.get("content", "Please continue the discussion.")
             author = group.get("author", "主持人")
@@ -294,7 +326,7 @@ def layout_to_yaml(data: dict) -> str:
                     }
                 })
             else:
-                plan.append({"expert": _node_yaml_name(node, use_bot_session)})
+                plan.append(_make_expert_step(node))
     else:
         # Step 3: Process remaining ungrouped, unconnected nodes
         # Auto-detect spatial patterns
@@ -307,15 +339,21 @@ def layout_to_yaml(data: dict) -> str:
             for cluster in clusters:
                 if len(cluster) == 1:
                     # Single node → sequential expert step
-                    plan.append({"expert": _node_yaml_name(cluster[0], use_bot_session)})
+                    plan.append(_make_expert_step(cluster[0]))
                 elif _is_circular_arrangement(cluster):
                     # Circular arrangement → parallel (brainstorm)
-                    plan.append({"parallel": [_node_yaml_name(n, use_bot_session) for n in cluster]})
+                    par_items = []
+                    for cn in cluster:
+                        if cn.get("type") == "external":
+                            par_items.append(_make_expert_step(cn))
+                        else:
+                            par_items.append(_node_yaml_name(cn, use_bot_session))
+                    plan.append({"parallel": par_items})
                 else:
                     # Linear/scattered cluster → sort by x-coordinate for left-to-right order
                     sorted_nodes = sorted(cluster, key=lambda n: (n["x"], n["y"]))
                     for n in sorted_nodes:
-                        plan.append({"expert": _node_yaml_name(n, use_bot_session)})
+                        plan.append(_make_expert_step(n))
 
     # Step 4: Process manual injection nodes (skip those already consumed by edges)
     manual_nodes = [n for n in nodes if n.get("type") == "manual" and n["id"] not in grouped_node_ids and n["id"] not in edge_consumed_ids]
@@ -404,6 +442,8 @@ def _build_llm_prompt(data: dict) -> str:
         inst_label = f" [instance #{inst}]" if inst > 1 else ""
         if n.get("type") == "session_agent":
             expert_list_str += f"  {i}. {n['emoji']} {n['name']}{inst_label} [SESSION AGENT: session_id={n.get('session_id', '?')}] — existing agent with its own tools & memory\n"
+        elif n.get("type") == "external":
+            expert_list_str += f"  {i}. {n['emoji']} {n['name']}{inst_label} [EXTERNAL API: api_url={n.get('api_url', '?')}] — external OpenAI-compatible service\n"
         else:
             expert_list_str += f"  {i}. {n['emoji']} {n['name']}{inst_label} (tag: {n['tag']}, temperature: {n.get('temperature', 0.5)}, source: {n.get('source', 'public')})\n"
 
@@ -465,6 +505,12 @@ def _build_llm_prompt(data: dict) -> str:
     repeat_str = "true (repeat plan every round — good for debates/discussions)" if settings.get("repeat", True) else "false (execute plan once — good for task pipelines)"
     bot_session_str = "Stateful bot mode (experts have memory + tools, suitable for complex task execution)" if settings.get("use_bot_session", False) else "Stateless discussion mode (lightweight, no memory, suitable for debates/brainstorming)"
 
+    # ── Generate current rule YAML as reference ──
+    try:
+        current_rule_yaml = layout_to_yaml(data)
+    except Exception:
+        current_rule_yaml = ""
+
     # ── Build the final prompt ──
     prompt = f"""You are an OASIS schedule YAML generator. Based on the user's visual arrangement of expert agents on a canvas, generate an optimal OASIS-compatible YAML schedule.
 
@@ -513,6 +559,18 @@ plan:
 ### Settings:
 - repeat: {repeat_str}
 - Mode: {bot_session_str}
+
+## Current Rule YAML (Auto-generated Reference)
+
+**IMPORTANT**: The following YAML was auto-generated from the canvas layout using a rule-based algorithm.
+It contains the complete configuration for each agent (including api_url, headers, model, etc.),
+but the **agent ordering may NOT be correct** — the algorithm uses simple spatial heuristics (left-to-right, top-to-bottom)
+which may not reflect the user's intended execution order. Please use this as a REFERENCE for agent configurations
+and adjust the ordering based on the canvas relationships and spatial layout analysis above.
+
+```yaml
+{current_rule_yaml if current_rule_yaml else "# (no rule YAML could be generated)"}
+```
 
 ## Your Task
 
@@ -574,6 +632,7 @@ def agent_generate_yaml():
                         "You are a YAML schedule generator for the OASIS expert orchestration engine. "
                         "Output ONLY valid YAML, no markdown fences, no explanations, no commentary. "
                         "The YAML must start with 'version: 1' and contain a 'plan:' section."
+                        "you should use mcp tool to set new yaml as workflow and save it layout"
                     ),
                 },
                 {
@@ -719,50 +778,64 @@ def validate_yaml():
 
 @app.route("/api/save-layout", methods=["POST"])
 def save_layout():
-    """Save the current canvas layout to a JSON file."""
+    """Save the current canvas layout as YAML (no separate layout JSON stored)."""
     data = request.get_json()
     if not data:
         return jsonify({"error": "No data provided"}), 400
 
-    save_dir = os.path.join(_PROJECT_ROOT, "data", "visual_layouts")
-    os.makedirs(save_dir, exist_ok=True)
-
     name = data.get("name", "untitled")
     safe_name = "".join(c for c in name if c.isalnum() or c in "-_ ").strip() or "untitled"
-    path = os.path.join(save_dir, f"{safe_name}.json")
 
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    try:
+        yaml_output = layout_to_yaml(data)
+    except Exception as e:
+        return jsonify({"error": f"YAML conversion failed: {e}"}), 500
 
-    return jsonify({"saved": True, "path": path})
+    yaml_dir = os.path.join(_PROJECT_ROOT, "data", "user_files", "default", "oasis", "yaml")
+    os.makedirs(yaml_dir, exist_ok=True)
+    fpath = os.path.join(yaml_dir, f"{safe_name}.yaml")
+    with open(fpath, "w", encoding="utf-8") as f:
+        f.write(f"# Saved from visual orchestrator\n{yaml_output}")
+
+    return jsonify({"saved": True, "path": fpath})
 
 
 @app.route("/api/load-layouts", methods=["GET"])
 def load_layouts():
-    """List all saved layouts."""
-    save_dir = os.path.join(_PROJECT_ROOT, "data", "visual_layouts")
-    if not os.path.isdir(save_dir):
+    """List all saved YAML workflows as available layouts."""
+    yaml_dir = os.path.join(_PROJECT_ROOT, "data", "user_files", "default", "oasis", "yaml")
+    if not os.path.isdir(yaml_dir):
         return jsonify([])
 
     layouts = []
-    for fname in os.listdir(save_dir):
-        if fname.endswith(".json"):
-            layouts.append(fname[:-5])
+    for fname in sorted(os.listdir(yaml_dir)):
+        if fname.endswith((".yaml", ".yml")):
+            layouts.append(fname.replace('.yaml', '').replace('.yml', ''))
     return jsonify(layouts)
 
 
 @app.route("/api/load-layout/<name>", methods=["GET"])
 def load_layout(name: str):
-    """Load a specific saved layout."""
-    safe_name = "".join(c for c in name if c.isalnum() or c in "-_ ").strip()
-    path = os.path.join(_PROJECT_ROOT, "data", "visual_layouts", f"{safe_name}.json")
+    """Load a layout by reading the YAML file and converting to layout on-the-fly."""
+    from mcp_oasis import _yaml_to_layout_data
 
-    if not os.path.isfile(path):
+    safe_name = "".join(c for c in name if c.isalnum() or c in "-_ ").strip()
+    yaml_dir = os.path.join(_PROJECT_ROOT, "data", "user_files", "default", "oasis", "yaml")
+    fpath = os.path.join(yaml_dir, f"{safe_name}.yaml")
+    if not os.path.isfile(fpath):
+        fpath = os.path.join(yaml_dir, f"{safe_name}.yml")
+    if not os.path.isfile(fpath):
         return jsonify({"error": "Layout not found"}), 404
 
-    with open(path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    return jsonify(data)
+    with open(fpath, "r", encoding="utf-8") as f:
+        yaml_content = f.read()
+
+    try:
+        layout = _yaml_to_layout_data(yaml_content)
+        layout["name"] = safe_name
+        return jsonify(layout)
+    except Exception as e:
+        return jsonify({"error": f"YAML-to-layout conversion failed: {e}"}), 500
 
 
 if __name__ == "__main__":

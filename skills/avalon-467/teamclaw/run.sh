@@ -3,8 +3,8 @@
 
 # 锁定绝对路径：确保无论在哪启动，都能找到项目根目录
 export PROJECT_ROOT="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+export MINI_TIMEBOT_HEADLESS=0
 cd "$PROJECT_ROOT"
-
 echo "========== 1/4 环境检查与配置 =========="
 bash scripts/setup_env.sh
 if [ $? -ne 0 ]; then

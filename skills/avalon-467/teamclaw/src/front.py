@@ -454,10 +454,26 @@ HTML_TEMPLATE = """
         .orch-page.active { display: flex; }
         .orch-layout { display: flex; flex: 1; overflow: hidden; }
         .orch-sidebar {
-            width: 200px; flex-shrink: 0; border-right: 1px solid #e5e7eb;
+            width: 360px; flex-shrink: 0; border-right: 1px solid #e5e7eb;
             display: flex; flex-direction: column; background: #fafbfc; overflow: hidden;
         }
         .orch-sidebar-header { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; background: #f3f4f6; flex-shrink: 0; }
+        .orch-sidebar-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px;
+            flex: 1; overflow-y: auto; min-height: 0;
+        }
+        .orch-sidebar-grid-cell {
+            display: flex; flex-direction: column; border: 1px solid #e5e7eb;
+            border-radius: 8px; background: #fff; overflow: hidden; min-height: 0;
+        }
+        .orch-sidebar-grid-cell-header {
+            padding: 4px 6px; font-size: 10px; font-weight: 600; color: #6b7280;
+            letter-spacing: 0.3px; background: #f9fafb; border-bottom: 1px solid #f0f0f0;
+            display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+        }
+        .orch-sidebar-grid-cell-header button {
+            font-size: 11px; background: none; border: none; cursor: pointer; padding: 0 2px; color: #2563eb;
+        }
         .orch-expert-list { flex: 1; overflow-y: auto; padding: 4px 6px; }
         .orch-expert-card {
             display: flex; align-items: center; gap: 6px; padding: 6px 8px; margin-bottom: 3px;
@@ -467,7 +483,8 @@ HTML_TEMPLATE = """
         .orch-expert-card:hover { border-color: #2563eb; background: #eff6ff; }
         .orch-expert-card:active { cursor: grabbing; }
         .orch-expert-card .orch-emoji { font-size: 18px; }
-        .orch-expert-card .orch-name { font-weight: 500; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .orch-expert-card .orch-name { font-weight: 500; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+        .orch-expert-card:hover .orch-name { white-space: normal; word-break: break-all; }
         .orch-expert-card .orch-tag { font-size: 10px; color: #9ca3af; }
         .orch-expert-card .orch-temp { font-size: 10px; color: #059669; background: #ecfdf5; padding: 1px 5px; border-radius: 4px; }
         .orch-manual-card {
@@ -826,7 +843,7 @@ HTML_TEMPLATE = """
     <div id="app-splash">
         <img class="splash-icon" src="https://img.icons8.com/fluency/180/robot-2.png" alt="">
         <div class="splash-title">Teamclaw</div>
-        <div class="splash-sub">Xavier AI Agent</div>
+        <div class="splash-sub">TeamBot AI Agent</div>
     </div>
 
     <!-- Offline Banner -->
@@ -879,7 +896,7 @@ HTML_TEMPLATE = """
             <div class="page-tab-bar">
                 <div class="page-tab active" id="tab-chat" onclick="switchPage('chat')" data-i18n="tab_chat">💬 对话</div>
                 <div class="page-tab" id="tab-group" onclick="switchPage('group')" data-i18n="tab_group">👥 群聊</div>
-                <div class="page-tab" id="tab-orchestrate" onclick="switchPage('orchestrate')">🎨 编排</div>
+                <div class="page-tab" id="tab-orchestrate" onclick="switchPage('orchestrate')" data-i18n="tab_orchestrate">🎨 编排</div>
             </div>
 
             <!-- === Chat Page === -->
@@ -923,7 +940,7 @@ HTML_TEMPLATE = """
             <div id="chat-box" class="chat-container overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 flex-grow bg-gray-50">
                 <div class="flex justify-start">
                     <div class="message-agent bg-white border p-4 max-w-[85%] shadow-sm text-gray-700" data-i18n="welcome_message">
-                        你好！我是 Xavier 智能助手。我已经准备好为你服务，请输入你的指令。
+                        你好！我是 TeamBot 智能助手。我已经准备好为你服务，请输入你的指令。
                     </div>
                 </div>
             </div>
@@ -1060,31 +1077,49 @@ HTML_TEMPLATE = """
             <div class="orch-layout">
                 <!-- Left: Expert Pool -->
                 <div class="orch-sidebar" style="overflow-y:auto;">
-                    <div class="orch-sidebar-header">
-                        <span class="text-sm font-bold text-gray-700">🧑‍💼 专家池</span>
+                    <div class="orch-sidebar-header" style="display:flex;align-items:center;justify-content:space-between;">
+                        <span class="text-sm font-bold text-gray-700" data-i18n="orch_expert_pool">🧑‍💼 专家池</span>
+                        <!-- Manual injection -->
+                        <div class="orch-manual-card" draggable="true" id="orch-manual-card" style="margin:0;padding:4px 8px;font-size:11px;">
+                            <span style="font-size:14px;">📝</span>
+                            <div><span class="text-xs font-semibold text-gray-700" data-i18n="orch_manual_inject">手动注入</span></div>
+                        </div>
                     </div>
-                    <!-- Public experts -->
-                    <div style="padding:2px 8px;font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">📚 预设专家</div>
-                    <div class="orch-expert-list" id="orch-expert-list-public"></div>
-                    <!-- Custom experts -->
-                    <div style="padding:2px 8px;font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;border-top:1px solid #e5e7eb;margin-top:4px;display:flex;align-items:center;justify-content:space-between;">
-                        <span>🛠️ 自定义专家</span>
-                        <button onclick="orchShowAddExpertModal()" style="font-size:14px;background:none;border:none;cursor:pointer;padding:0 2px;" title="添加自定义专家">➕</button>
+                    <div class="orch-sidebar-grid">
+                        <!-- Top-left: Public experts -->
+                        <div class="orch-sidebar-grid-cell">
+                            <div class="orch-sidebar-grid-cell-header">
+                                <span data-i18n="orch_preset_experts">📚 预设专家</span>
+                            </div>
+                            <div class="orch-expert-list" id="orch-expert-list-public"></div>
+                        </div>
+                        <!-- Top-right: Custom experts -->
+                        <div class="orch-sidebar-grid-cell">
+                            <div class="orch-sidebar-grid-cell-header">
+                                <span data-i18n="orch_custom_experts">🛠️ 自定义专家</span>
+                <button onclick="orchShowAddExpertModal()" data-i18n-title="orch_add_expert_btn" title="添加自定义专家">➕</button>
+                            </div>
+                            <div class="orch-expert-list" id="orch-expert-list-custom"></div>
+                        </div>
+                        <!-- Bottom-left: Session agents -->
+                        <div class="orch-sidebar-grid-cell">
+                            <div class="orch-sidebar-grid-cell-header">
+                                <span data-i18n="orch_session_agents">💬 Session Agent</span>
+                                <button onclick="orchLoadSessionAgents()" data-i18n-title="refresh" title="刷新">🔄</button>
+                            </div>
+                            <div class="orch-expert-list" id="orch-expert-list-sessions"></div>
+                        </div>
+                        <!-- Bottom-right: OpenClaw sessions -->
+                        <div class="orch-sidebar-grid-cell">
+                            <div class="orch-sidebar-grid-cell-header">
+<span data-i18n="orch_openclaw_sessions">🦞 OpenClaw</span>
+                                <button onclick="orchLoadOpenClawSessions()" data-i18n-title="refresh" title="刷新">🔄</button>
+                            </div>
+                            <div class="orch-expert-list" id="orch-expert-list-openclaw"></div>
+                        </div>
                     </div>
-                    <div class="orch-expert-list" id="orch-expert-list-custom"></div>
-                    <!-- Session agents -->
-                    <div style="padding:2px 8px;font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;border-top:1px solid #e5e7eb;margin-top:4px;display:flex;align-items:center;justify-content:space-between;">
-                        <span>💬 Session Agent</span>
-                        <button onclick="orchLoadSessionAgents()" style="font-size:11px;background:none;border:none;cursor:pointer;padding:0 2px;color:#2563eb;" title="刷新">🔄</button>
-                    </div>
-                    <div class="orch-expert-list" id="orch-expert-list-sessions"></div>
-                    <!-- Manual injection -->
-                    <div class="orch-manual-card" draggable="true" id="orch-manual-card">
-                        <span style="font-size:18px;">📝</span>
-                        <div><div class="text-xs font-semibold text-gray-700">手动注入</div><div class="text-[10px] text-purple-400">固定内容</div></div>
-                    </div>
-                    <div style="padding:6px 10px;font-size:10px;color:#9ca3af;border-top:1px solid #e5e7eb;">
-                        <b>快捷操作：</b><br>• 拖入专家到画布<br>• 连接端口 = 工作流<br>• 选中 + Ctrl+G = 分组<br>• 双击侧栏快速添加
+                    <div style="padding:4px 10px;font-size:10px;color:#9ca3af;border-top:1px solid #e5e7eb;flex-shrink:0;">
+                        <b data-i18n="orch_shortcuts_title">快捷操作：</b><span data-i18n="orch_shortcuts_body">拖入专家到画布 · 连接端口=工作流 · Ctrl+G=分组 · 双击快速添加</span>
                     </div>
                 </div>
 
@@ -1092,13 +1127,13 @@ HTML_TEMPLATE = """
                 <div class="orch-canvas-wrapper">
                     <!-- Toolbar -->
                     <div class="orch-toolbar">
-                        <button onclick="orchAutoArrange()" class="orch-btn" title="自动排列">🔄 排列</button>
-                        <button onclick="orchSaveLayout()" class="orch-btn" title="保存布局">💾 保存</button>
-                        <button onclick="orchLoadLayout()" class="orch-btn" title="加载布局">📂 加载</button>
-                        <button onclick="orchGenerateAgentYaml()" class="orch-btn orch-btn-primary" title="AI 生成 YAML">🤖 AI编排</button>
-                        <button onclick="orchExportYaml()" class="orch-btn orch-btn-primary" title="复制 YAML">📋 导出</button>
-                        <button onclick="orchRefreshSessions()" class="orch-btn" title="刷新 session 状态">🔄 状态</button>
-                        <button onclick="orchClearCanvas()" class="orch-btn orch-btn-danger" title="清空画布">🗑️ 清空</button>
+                        <button onclick="orchAutoArrange()" class="orch-btn" data-i18n-title="orch_tip_arrange" title="自动排列"><span data-i18n="orch_btn_arrange">🔄 排列</span></button>
+                        <button onclick="orchSaveLayout()" class="orch-btn" data-i18n-title="orch_tip_save" title="保存布局"><span data-i18n="orch_btn_save">💾 保存</span></button>
+                        <button onclick="orchLoadLayout()" class="orch-btn" data-i18n-title="orch_tip_load" title="加载布局"><span data-i18n="orch_btn_load">📂 加载</span></button>
+                        <button onclick="orchGenerateAgentYaml()" class="orch-btn orch-btn-primary" data-i18n-title="orch_tip_ai" title="AI 生成 YAML"><span data-i18n="orch_btn_ai">🤖 AI编排</span></button>
+                        <button onclick="orchExportYaml()" class="orch-btn orch-btn-primary" data-i18n-title="orch_tip_export" title="复制 YAML"><span data-i18n="orch_btn_export">📋 导出</span></button>
+                        <button onclick="orchRefreshSessions()" class="orch-btn" data-i18n-title="orch_tip_status" title="刷新 session 状态"><span data-i18n="orch_btn_status">🔄 状态</span></button>
+                        <button onclick="orchClearCanvas()" class="orch-btn orch-btn-danger" data-i18n-title="orch_tip_clear" title="清空画布"><span data-i18n="orch_btn_clear">🗑️ 清空</span></button>
                     </div>
                     <div class="orch-canvas" id="orch-canvas-area">
                         <div class="orch-canvas-inner" id="orch-canvas-inner">
@@ -1107,26 +1142,26 @@ HTML_TEMPLATE = """
                             </svg>
                             <div id="orch-canvas-hint" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:#9ca3af;pointer-events:none;z-index:1;">
                                 <div style="font-size:40px;margin-bottom:8px;">🎯</div>
-                                <div style="font-size:14px;font-weight:500;color:#6b7280;">拖入专家开始编排</div>
-                                <div style="font-size:11px;margin-top:6px;color:#9ca3af;">拖入专家开始编排</div>
+                                <div style="font-size:14px;font-weight:500;color:#6b7280;" data-i18n="orch_hint_drag">拖入专家开始编排</div>
+                                <div style="font-size:11px;margin-top:6px;color:#9ca3af;" data-i18n="orch_hint_drag">拖入专家开始编排</div>
                             </div>
                         </div>
                         <div class="orch-nav-controls">
                             <div class="nav-row">
-                                <button onclick="orchPanBy(0,-60)" title="上移">▲</button>
+                                <button onclick="orchPanBy(0,-60)" data-i18n-title="orch_tip_up" title="上移">▲</button>
                             </div>
                             <div class="nav-row">
-                                <button onclick="orchPanBy(-60,0)" title="左移">◀</button>
-                                <button class="nav-center" onclick="orchResetView()" title="重置视图">⌂</button>
-                                <button onclick="orchPanBy(60,0)" title="右移">▶</button>
+                                <button onclick="orchPanBy(-60,0)" data-i18n-title="orch_tip_left" title="左移">◀</button>
+                                <button class="nav-center" onclick="orchResetView()" data-i18n-title="orch_tip_reset" title="重置视图">⌂</button>
+                                <button onclick="orchPanBy(60,0)" data-i18n-title="orch_tip_right" title="右移">▶</button>
                             </div>
                             <div class="nav-row">
-                                <button onclick="orchPanBy(0,60)" title="下移">▼</button>
+                                <button onclick="orchPanBy(0,60)" data-i18n-title="orch_tip_down" title="下移">▼</button>
                             </div>
                             <div class="nav-zoom-row">
-                                <button onclick="orchZoom(-0.1)" title="缩小">−</button>
+                                <button onclick="orchZoom(-0.1)" data-i18n-title="orch_tip_zoomout" title="缩小">−</button>
                                 <span id="orch-zoom-label" class="zoom-label">100%</span>
-                                <button onclick="orchZoom(0.1)" title="放大">+</button>
+                                <button onclick="orchZoom(0.1)" data-i18n-title="orch_tip_zoomin" title="放大">+</button>
                             </div>
                         </div>
                     </div>
@@ -1135,36 +1170,36 @@ HTML_TEMPLATE = """
                 <!-- Right: Settings + YAML -->
                 <div class="orch-right-panel">
                     <div class="orch-right-section">
-                        <div class="text-xs font-bold text-gray-500 uppercase tracking-wide px-3 pt-3 pb-1">⚙️ 设置</div>
+                        <div class="text-xs font-bold text-gray-500 uppercase tracking-wide px-3 pt-3 pb-1" data-i18n="orch_settings">⚙️ 设置</div>
                         <div class="px-3 pb-2 space-y-1 text-xs text-gray-600 border-b border-gray-100">
-                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="orch-repeat" checked class="accent-blue-600"> 每轮重复计划</label>
-                            <label class="flex items-center gap-2">轮次: <input type="number" id="orch-rounds" value="5" min="1" max="20" class="w-12 px-1 py-0.5 border border-gray-300 rounded text-xs"></label>
-                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="orch-bot-session" class="accent-blue-600"> 有状态模式</label>
-                            <label class="flex items-center gap-2">聚类阈值: <input type="range" id="orch-threshold" min="50" max="400" value="150" class="flex-1 accent-blue-600"><span id="orch-threshold-val" class="text-[10px] text-gray-400">150</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="orch-repeat" checked class="accent-blue-600"> <span data-i18n="orch_repeat">每轮重复计划</span></label>
+                            <label class="flex items-center gap-2"><span data-i18n="orch_rounds">轮次:</span> <input type="number" id="orch-rounds" value="5" min="1" max="20" class="w-12 px-1 py-0.5 border border-gray-300 rounded text-xs"></label>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="orch-bot-session" class="accent-blue-600"> <span data-i18n="orch_stateful">有状态模式</span></label>
+                            <label class="flex items-center gap-2"><span data-i18n="orch_threshold">聚类阈值:</span> <input type="range" id="orch-threshold" min="50" max="400" value="150" class="flex-1 accent-blue-600"><span id="orch-threshold-val" class="text-[10px] text-gray-400">150</span></label>
                         </div>
                     </div>
 
                     <div class="orch-right-section">
-                        <div class="text-xs font-bold text-gray-500 uppercase tracking-wide px-3 pt-2 pb-1">🤖 AI 生成</div>
-                        <div id="orch-agent-status" class="mx-3 mb-1 px-2 py-1 rounded text-[10px] bg-gray-50 border border-gray-200 text-gray-400">
+                        <div class="text-xs font-bold text-gray-500 uppercase tracking-wide px-3 pt-2 pb-1" data-i18n="orch_ai_gen">🤖 AI 生成</div>
+                        <div id="orch-agent-status" class="mx-3 mb-1 px-2 py-1 rounded text-[10px] bg-gray-50 border border-gray-200 text-gray-400" data-i18n="orch_ai_hint">
                             点击「🤖 AI编排」自动生成 YAML
                         </div>
                         <div class="px-3 pb-1">
-                            <div class="text-[10px] text-gray-400 mb-1">📨 发送的 Prompt <button onclick="orchCopyPrompt()" class="text-[10px] text-blue-500 hover:underline float-right">复制</button></div>
-                            <div class="orch-yaml-box text-[10px] text-amber-600" id="orch-prompt-content" style="max-height:100px;">点击 AI编排 后显示</div>
+                            <div class="text-[10px] text-gray-400 mb-1"><span data-i18n="orch_prompt_label">📨 发送的 Prompt</span> <button onclick="orchCopyPrompt()" class="text-[10px] text-blue-500 hover:underline float-right" data-i18n="orch_prompt_copy">复制</button></div>
+                            <div class="orch-yaml-box text-[10px] text-amber-600" id="orch-prompt-content" style="max-height:100px;" data-i18n="orch_prompt_hint">点击 AI编排 后显示</div>
                         </div>
                         <div class="px-3 pb-1">
-                            <div class="text-[10px] text-gray-400 mb-1">🤖 Agent YAML <button onclick="orchCopyAgentYaml()" class="text-[10px] text-blue-500 hover:underline float-right">复制</button></div>
-                            <div class="orch-yaml-box text-[10px] text-green-600" id="orch-agent-yaml" style="max-height:140px;">等待 Agent 生成</div>
+                            <div class="text-[10px] text-gray-400 mb-1"><span data-i18n="orch_agent_yaml_label">🤖 Agent YAML</span> <button onclick="orchCopyAgentYaml()" class="text-[10px] text-blue-500 hover:underline float-right" data-i18n="orch_agent_yaml_copy">复制</button></div>
+                            <div class="orch-yaml-box text-[10px] text-green-600" id="orch-agent-yaml" style="max-height:140px;" data-i18n="orch_agent_yaml_hint">等待 Agent 生成</div>
                         </div>
                     </div>
 
                     <div class="orch-right-section flex-1 flex flex-col min-h-0">
-                        <div class="text-xs font-bold text-gray-500 uppercase tracking-wide px-3 pt-2 pb-1">📄 规则 YAML</div>
-                        <div class="orch-yaml-box flex-1 mx-3 mb-2 text-xs text-green-700" id="orch-yaml-content">拖入专家后自动生成...</div>
+                        <div class="text-xs font-bold text-gray-500 uppercase tracking-wide px-3 pt-2 pb-1" data-i18n="orch_rule_yaml">📄 规则 YAML</div>
+                        <div class="orch-yaml-box flex-1 mx-3 mb-2 text-xs text-green-700" id="orch-yaml-content" data-i18n="orch_rule_yaml_hint">拖入专家后自动生成...</div>
                     </div>
 
-                    <div class="orch-status-bar" id="orch-status-bar">节点: 0 | 连线: 0 | 分组: 0</div>
+                    <div class="orch-status-bar" id="orch-status-bar" data-i18n="orch_status_bar_init">节点: 0 | 连线: 0 | 分组: 0</div>
                 </div>
             </div>
         </div>
@@ -1295,8 +1330,8 @@ HTML_TEMPLATE = """
                 menu_logout: '🚪 退出',
                 
                 // 聊天区域
-                welcome_message: '你好！我是 Xavier 智能助手。我已经准备好为你服务，请输入你的指令。',
-                new_session_message: '🆕 已开启新对话。我是 Xavier 智能助手，请输入你的指令。',
+                welcome_message: '你好！我是 TeamBot 智能助手。我已经准备好为你服务，请输入你的指令。',
+                new_session_message: '🆕 已开启新对话。我是 TeamBot 智能助手，请输入你的指令。',
                 input_placeholder: '输入指令...（可粘贴图片/上传文件/录音）',
                 send_btn: '发送',
                 cancel_btn: '终止',
@@ -1389,6 +1424,7 @@ HTML_TEMPLATE = """
                 // 页面切换
                 tab_chat: '💬 对话',
                 tab_group: '👥 群聊',
+                tab_orchestrate: '🎨 编排',
                 
                 // 群聊
                 group_title: '👥 群聊列表',
@@ -1415,8 +1451,147 @@ HTML_TEMPLATE = """
                 // 离线提示
                 offline_banner: '⚠️ 网络已断开，请检查连接',
                 
+                // 编排面板
+                orch_expert_pool: '🧑‍💼 专家池',
+                orch_preset_experts: '📚 预设专家',
+                orch_custom_experts: '🛠️ 自定义专家',
+                orch_session_agents: '💬 Session Agent',
+orch_openclaw_sessions: '🦞 OpenClaw',
+                orch_manual_inject: '手动注入',
+                orch_shortcuts_title: '快捷操作：',
+                orch_shortcuts_body: '拖入专家到画布 · 连接端口=工作流 · Ctrl+G=分组 · 双击快速添加',
+                // Orchestration toolbar buttons
+                orch_btn_arrange: '🔄 排列',
+                orch_btn_save: '💾 保存',
+                orch_btn_load: '📂 加载',
+                orch_btn_ai: '🤖 AI编排',
+                orch_btn_export: '📋 导出',
+                orch_btn_status: '🔄 状态',
+                orch_btn_clear: '🗑️ 清空',
+                orch_tip_arrange: '自动排列',
+                orch_tip_save: '保存布局',
+                orch_tip_load: '加载布局',
+                orch_tip_ai: 'AI 生成 YAML',
+                orch_tip_export: '复制 YAML',
+                orch_tip_status: '刷新 session 状态',
+                orch_tip_clear: '清空画布',
+                // Canvas hints
+                orch_hint_drag: '拖入专家开始编排',
+                // Nav controls
+                orch_tip_up: '上移',
+                orch_tip_down: '下移',
+                orch_tip_left: '左移',
+                orch_tip_right: '右移',
+                orch_tip_reset: '重置视图',
+                orch_tip_zoomout: '缩小',
+                orch_tip_zoomin: '放大',
+                // Right panel
+                orch_settings: '⚙️ 设置',
+                orch_repeat: '每轮重复计划',
+                orch_rounds: '轮次:',
+                orch_stateful: '有状态模式',
+                orch_threshold: '聚类阈值:',
+                orch_ai_gen: '🤖 AI 生成',
+                orch_ai_hint: '点击「🤖 AI编排」自动生成 YAML',
+                orch_prompt_label: '📨 发送的 Prompt',
+                orch_prompt_copy: '复制',
+                orch_prompt_hint: '点击 AI编排 后显示',
+                orch_agent_yaml_label: '🤖 Agent YAML',
+                orch_agent_yaml_copy: '复制',
+                orch_agent_yaml_hint: '等待 Agent 生成',
+                orch_rule_yaml: '📄 规则 YAML',
+                orch_rule_yaml_hint: '拖入专家后自动生成...',
+                orch_status_bar: '节点: {nodes} | 连线: {edges} | 分组: {groups}',
+                orch_status_bar_init: '节点: 0 | 连线: 0 | 分组: 0',
+                orch_manual_inject: '手动注入',
+                orch_node_remove: '移除',
+                orch_default_author: '主持人',
+                orch_yaml_valid: '✅ 有效 YAML — {steps} 步骤 [{types}]',
+                orch_yaml_saved_suffix: ' | 💾 已保存: {file}',
+                orch_yaml_warn: '⚠️ YAML 校验问题: {error}',
+                orch_comm_fail: '# 通信失败: {msg}',
+                // Context menu
+                orch_ctx_duplicate: '📋 复用此专家 (同序号)',
+                orch_ctx_new_instance: '➕ 新建实例 (新序号)',
+                orch_ctx_group_parallel: '🔀 创建并行分组',
+                orch_ctx_group_all: '👥 创建全员分组',
+                orch_ctx_delete: '🗑️ 删除选中',
+                orch_ctx_refresh_yaml: '🔄 刷新 YAML',
+                orch_ctx_clear: '🗑️ 清空画布',
+                // Group labels
+                orch_group_parallel: '🔀 并行',
+                orch_group_all: '👥 全员',
+                orch_group_dissolve: '解散',
+                // Modals
+                orch_modal_edit_manual: '📝 编辑手动注入内容',
+                orch_modal_author_ph: '作者',
+                orch_modal_content_ph: '注入内容...',
+                orch_modal_cancel: '取消',
+                orch_modal_save: '保存',
+                orch_modal_select_session: '🎯 选择目标 Agent Session',
+                orch_modal_select_desc: '选择一个已有的对话 Session，或新建一个，生成完成后可跳转继续对话。',
+                orch_modal_loading: '⏳ 加载中...',
+                orch_modal_new_session: '新建对话',
+                orch_modal_confirm_gen: '确认并生成',
+                orch_modal_select_layout: '📂 选择布局',
+                orch_modal_delete: '🗑️ 删除',
+                orch_modal_load: '加载',
+                // Toast messages
+                orch_toast_arranged: '已自动排列',
+                orch_toast_saved: '已保存: {name}',
+                orch_toast_save_fail: '保存失败',
+                orch_toast_no_layouts: '没有已保存的布局',
+                orch_toast_deleted: '已删除: {name}',
+                orch_toast_del_fail: '删除失败',
+                orch_toast_loaded: '已加载: {name}',
+                orch_toast_load_fail: '加载失败',
+                orch_toast_yaml_copied: 'YAML 已复制!',
+                orch_toast_gen_yaml: '请先生成 YAML',
+                orch_toast_prompt_copied: 'Prompt 已复制',
+                orch_toast_agent_yaml_copied: 'Agent YAML 已复制',
+                orch_toast_select_2: '请先选中至少2个节点',
+                orch_toast_add_first: '请先添加专家节点',
+                orch_toast_agent_unavail: 'Agent 不可用',
+                orch_toast_yaml_generated: 'YAML 已生成并保存! ✅',
+                orch_toast_agent_valid: 'Agent 生成了有效的 YAML! ✅',
+                orch_toast_session_updated: 'Session 状态已更新',
+                orch_toast_session_fail: '获取状态失败',
+                orch_toast_no_session: '没有选中的 Session',
+                orch_toast_jumped: '已跳转到对话 #{id}',
+                orch_toast_custom_added: '自定义专家已添加: {name}',
+                orch_toast_fill_info: '请填写完整信息',
+                orch_toast_net_error: '网络错误',
+                orch_toast_expert_deleted: '已删除: {name}',
+                orch_toast_expert_del_fail: '删除失败',
+                // Confirm dialogs
+                orch_confirm_del_expert: '删除自定义专家 "{name}"？',
+                orch_confirm_del_layout: '确定删除布局 "{name}"？',
+                orch_prompt_layout_name: '布局名称:',
+                // Agent status
+                orch_status_communicating: '🔄 正在与 Agent 通信 (Session: #{id})...',
+                orch_status_generating: '⏳ 生成中...',
+                orch_status_waiting: '⏳ 等待 Agent 返回...',
+                orch_status_auth_fail: '认证失败',
+                orch_status_agent_unavail: 'Agent 不可用',
+                orch_status_conn_error: '❌ 连接错误',
+                orch_goto_chat: '💬 跳转到对话 {session} 继续聊天',
+                orch_no_custom: '暂无自定义专家',
+                orch_no_session: '暂无 Session',
+                orch_load_fail: '❌ 加载失败',
+                orch_load_session_fail: '❌ 加载 Session 列表失败',
+                orch_msg_count: '{count}条消息',
+                orch_add_expert_title: '🛠️ 添加自定义专家',
+                orch_add_expert_btn: '添加自定义专家',
+                orch_label_name: '名称',
+                orch_label_tag: 'Tag (英文)',
+                orch_label_temp: 'Temperature',
+                orch_label_persona: 'Persona (角色描述)',
+                orch_ph_name: '如：金融分析师',
+                orch_ph_tag: '如：finance',
+                orch_ph_persona: '描述这位专家的角色、专长和行为风格...',
+                
                 // 其他
-                splash_subtitle: 'Xavier AI Agent',
+                splash_subtitle: 'TeamBot AI Agent',
                 secure_footer: 'Secured by Nginx Reverse Proxy & SSH Tunnel',
                 refresh: '刷新',
                 collapse: '收起',
@@ -1458,8 +1633,8 @@ HTML_TEMPLATE = """
                 menu_logout: '🚪 Logout',
                 
                 // Chat area
-                welcome_message: 'Hello! I am Xavier AI Assistant. Ready to serve you. Please enter your instructions.',
-                new_session_message: '🆕 New conversation started. I am Xavier AI Assistant. Please enter your instructions.',
+                welcome_message: 'Hello! I am TeamBot AI Assistant. Ready to serve you. Please enter your instructions.',
+                new_session_message: '🆕 New conversation started. I am TeamBot AI Assistant. Please enter your instructions.',
                 input_placeholder: 'Enter command... (paste images/upload files/record audio)',
                 send_btn: 'Send',
                 cancel_btn: 'Stop',
@@ -1552,6 +1727,7 @@ HTML_TEMPLATE = """
                 // Page switch
                 tab_chat: '💬 Chat',
                 tab_group: '👥 Groups',
+                tab_orchestrate: '🎨 Orchestrate',
                 
                 // Group chat
                 group_title: '👥 Group Chats',
@@ -1578,8 +1754,147 @@ HTML_TEMPLATE = """
                 // Offline
                 offline_banner: '⚠️ Network disconnected, please check connection',
                 
+                // Orchestration panel
+                orch_expert_pool: '🧑‍💼 Expert Pool',
+                orch_preset_experts: '📚 Preset Experts',
+                orch_custom_experts: '🛠️ Custom Experts',
+                orch_session_agents: '💬 Session Agents',
+orch_openclaw_sessions: '🦞 OpenClaw',
+                orch_manual_inject: 'Manual Inject',
+                orch_shortcuts_title: 'Shortcuts: ',
+                orch_shortcuts_body: 'Drag expert to canvas · Connect ports=workflow · Ctrl+G=group · Double-click to add',
+                // Orchestration toolbar buttons
+                orch_btn_arrange: '🔄 Arrange',
+                orch_btn_save: '💾 Save',
+                orch_btn_load: '📂 Load',
+                orch_btn_ai: '🤖 AI Orch',
+                orch_btn_export: '📋 Export',
+                orch_btn_status: '🔄 Status',
+                orch_btn_clear: '🗑️ Clear',
+                orch_tip_arrange: 'Auto arrange',
+                orch_tip_save: 'Save layout',
+                orch_tip_load: 'Load layout',
+                orch_tip_ai: 'AI generate YAML',
+                orch_tip_export: 'Copy YAML',
+                orch_tip_status: 'Refresh session status',
+                orch_tip_clear: 'Clear canvas',
+                // Canvas hints
+                orch_hint_drag: 'Drag experts to start orchestrating',
+                // Nav controls
+                orch_tip_up: 'Pan up',
+                orch_tip_down: 'Pan down',
+                orch_tip_left: 'Pan left',
+                orch_tip_right: 'Pan right',
+                orch_tip_reset: 'Reset view',
+                orch_tip_zoomout: 'Zoom out',
+                orch_tip_zoomin: 'Zoom in',
+                // Right panel
+                orch_settings: '⚙️ Settings',
+                orch_repeat: 'Repeat plan each round',
+                orch_rounds: 'Rounds:',
+                orch_stateful: 'Stateful mode',
+                orch_threshold: 'Cluster threshold:',
+                orch_ai_gen: '🤖 AI Generate',
+                orch_ai_hint: 'Click "🤖 AI Orch" to auto-generate YAML',
+                orch_prompt_label: '📨 Prompt Sent',
+                orch_prompt_copy: 'Copy',
+                orch_prompt_hint: 'Shown after AI Orch',
+                orch_agent_yaml_label: '🤖 Agent YAML',
+                orch_agent_yaml_copy: 'Copy',
+                orch_agent_yaml_hint: 'Waiting for Agent',
+                orch_rule_yaml: '📄 Rule YAML',
+                orch_rule_yaml_hint: 'Auto-generated after adding experts...',
+                orch_status_bar: 'Nodes: {nodes} | Edges: {edges} | Groups: {groups}',
+                orch_status_bar_init: 'Nodes: 0 | Edges: 0 | Groups: 0',
+                orch_manual_inject: 'Manual Inject',
+                orch_node_remove: 'Remove',
+                orch_default_author: 'Moderator',
+                orch_yaml_valid: '✅ Valid YAML — {steps} steps [{types}]',
+                orch_yaml_saved_suffix: ' | 💾 Saved: {file}',
+                orch_yaml_warn: '⚠️ YAML validation issue: {error}',
+                orch_comm_fail: '# Communication failed: {msg}',
+                // Context menu
+                orch_ctx_duplicate: '📋 Duplicate (same instance)',
+                orch_ctx_new_instance: '➕ New Instance',
+                orch_ctx_group_parallel: '🔀 Group as Parallel',
+                orch_ctx_group_all: '👥 Group as All Experts',
+                orch_ctx_delete: '🗑️ Delete Selected',
+                orch_ctx_refresh_yaml: '🔄 Refresh YAML',
+                orch_ctx_clear: '🗑️ Clear Canvas',
+                // Group labels
+                orch_group_parallel: '🔀 Parallel',
+                orch_group_all: '👥 All Experts',
+                orch_group_dissolve: 'Dissolve',
+                // Modals
+                orch_modal_edit_manual: '📝 Edit Manual Injection',
+                orch_modal_author_ph: 'Author',
+                orch_modal_content_ph: 'Injection content...',
+                orch_modal_cancel: 'Cancel',
+                orch_modal_save: 'Save',
+                orch_modal_select_session: '🎯 Select Target Agent Session',
+                orch_modal_select_desc: 'Select an existing conversation session or create a new one. You can jump to it after generation.',
+                orch_modal_loading: '⏳ Loading...',
+                orch_modal_new_session: 'New Conversation',
+                orch_modal_confirm_gen: 'Confirm & Generate',
+                orch_modal_select_layout: '📂 Select Layout',
+                orch_modal_delete: '🗑️ Delete',
+                orch_modal_load: 'Load',
+                // Toast messages
+                orch_toast_arranged: 'Auto-arranged',
+                orch_toast_saved: 'Saved: {name}',
+                orch_toast_save_fail: 'Save failed',
+                orch_toast_no_layouts: 'No saved layouts found',
+                orch_toast_deleted: 'Deleted: {name}',
+                orch_toast_del_fail: 'Delete failed',
+                orch_toast_loaded: 'Loaded: {name}',
+                orch_toast_load_fail: 'Load failed',
+                orch_toast_yaml_copied: 'YAML copied!',
+                orch_toast_gen_yaml: 'Generate YAML first',
+                orch_toast_prompt_copied: 'Prompt copied',
+                orch_toast_agent_yaml_copied: 'Agent YAML copied',
+                orch_toast_select_2: 'Select at least 2 nodes',
+                orch_toast_add_first: 'Add expert nodes first',
+                orch_toast_agent_unavail: 'Agent unavailable',
+                orch_toast_yaml_generated: 'YAML generated and saved! ✅',
+                orch_toast_agent_valid: 'Agent generated valid YAML! ✅',
+                orch_toast_session_updated: 'Session status updated',
+                orch_toast_session_fail: 'Failed to get status',
+                orch_toast_no_session: 'No session selected',
+                orch_toast_jumped: 'Jumped to chat #{id}',
+                orch_toast_custom_added: 'Custom expert added: {name}',
+                orch_toast_fill_info: 'Please fill in all fields',
+                orch_toast_net_error: 'Network error',
+                orch_toast_expert_deleted: 'Deleted: {name}',
+                orch_toast_expert_del_fail: 'Delete failed',
+                // Confirm dialogs
+                orch_confirm_del_expert: 'Delete custom expert "{name}"?',
+                orch_confirm_del_layout: 'Delete layout "{name}"?',
+                orch_prompt_layout_name: 'Layout name:',
+                // Agent status
+                orch_status_communicating: '🔄 Communicating with Agent (Session: #{id})...',
+                orch_status_generating: '⏳ Generating...',
+                orch_status_waiting: '⏳ Waiting for Agent response...',
+                orch_status_auth_fail: 'Authentication failed',
+                orch_status_agent_unavail: 'Agent unavailable',
+                orch_status_conn_error: '❌ Connection error',
+                orch_goto_chat: '💬 Jump to chat {session} to continue',
+                orch_no_custom: 'No custom experts yet',
+                orch_no_session: 'No sessions yet',
+                orch_load_fail: '❌ Load failed',
+                orch_load_session_fail: '❌ Failed to load session list',
+                orch_msg_count: '{count} messages',
+                orch_add_expert_title: '🛠️ Add Custom Expert',
+                orch_add_expert_btn: 'Add custom expert',
+                orch_label_name: 'Name',
+                orch_label_tag: 'Tag (English)',
+                orch_label_temp: 'Temperature',
+                orch_label_persona: 'Persona (Role Description)',
+                orch_ph_name: 'e.g. Financial Analyst',
+                orch_ph_tag: 'e.g. finance',
+                orch_ph_persona: 'Describe this expert\\'s role, expertise and behavior style...',
+                
                 // Others
-                splash_subtitle: 'Xavier AI Agent',
+                splash_subtitle: 'TeamBot AI Agent',
                 secure_footer: 'Secured by Nginx Reverse Proxy & SSH Tunnel',
                 refresh: 'Refresh',
                 collapse: 'Collapse',
@@ -1592,8 +1907,14 @@ HTML_TEMPLATE = """
         if (!i18n[currentLang]) { currentLang = 'zh-CN'; localStorage.setItem('lang', 'zh-CN'); }
         
         // 获取翻译文本
-        function t(key) {
-            return (i18n[currentLang] && i18n[currentLang][key]) || i18n['zh-CN'][key] || key;
+        function t(key, params) {
+            let text = (i18n[currentLang] && i18n[currentLang][key]) || i18n['zh-CN'][key] || key;
+            if (params) {
+                Object.keys(params).forEach(k => {
+                    text = text.replace(new RegExp('\\{' + k + '\\}', 'g'), params[k]);
+                });
+            }
+            return text;
         }
         
         // 切换语言
@@ -1627,6 +1948,11 @@ HTML_TEMPLATE = """
             // 更新 data-i18n-placeholder 属性
             document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
                 el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
+            });
+
+            // 更新 data-i18n-title 属性
+            document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                el.title = t(el.getAttribute('data-i18n-title'));
             });
             
             // 更新 title
@@ -4425,16 +4751,17 @@ HTML_TEMPLATE = """
     function orchInit() {
         orchLoadExperts();
         orchLoadSessionAgents();
+        orchLoadOpenClawSessions();
         orchSetupCanvas();
         orchSetupSettings();
         // Bind manual injection card events (dragstart + dblclick)
         const mc = document.getElementById('orch-manual-card');
         if (mc) {
             mc.addEventListener('dragstart', e => {
-                e.dataTransfer.setData('application/json', JSON.stringify({type:'manual', name:'手动注入', tag:'manual', emoji:'📝', temperature:0}));
+                e.dataTransfer.setData('application/json', JSON.stringify({type:'manual', name:t('orch_manual_inject'), tag:'manual', emoji:'📝', temperature:0}));
                 e.dataTransfer.effectAllowed = 'copy';
             });
-            mc.addEventListener('dblclick', () => orchAddNodeCenter({type:'manual', name:'手动注入', tag:'manual', emoji:'📝', temperature:0}));
+            mc.addEventListener('dblclick', () => orchAddNodeCenter({type:'manual', name:t('orch_manual_inject'), tag:'manual', emoji:'📝', temperature:0}));
         }
     }
 
@@ -4458,7 +4785,7 @@ HTML_TEMPLATE = """
             card.className = 'orch-expert-card';
             card.draggable = true;
             const isCustom = exp.source === 'custom';
-            card.innerHTML = `<span class="orch-emoji">${exp.emoji}</span><div style="min-width:0;flex:1;"><div class="orch-name">${escapeHtml(exp.name)}</div><div class="orch-tag">${escapeHtml(exp.tag)}</div></div><span class="orch-temp">${exp.temperature||''}</span>${isCustom ? '<button class="orch-expert-del-btn" title="删除" style="font-size:10px;background:none;border:none;cursor:pointer;color:#dc2626;padding:0 2px;margin-left:2px;">✕</button>' : ''}`;
+            card.innerHTML = `<span class="orch-emoji">${exp.emoji}</span><div style="min-width:0;flex:1;"><div class="orch-name" title="${escapeHtml(exp.name)}">${escapeHtml(exp.name)}</div><div class="orch-tag">${escapeHtml(exp.tag)}</div></div><span class="orch-temp">${exp.temperature||''}</span>${isCustom ? '<button class="orch-expert-del-btn" title="' + t('orch_ctx_delete') + '" style="font-size:10px;background:none;border:none;cursor:pointer;color:#dc2626;padding:0 2px;margin-left:2px;">✕</button>' : ''}`;
             card.addEventListener('dragstart', e => {
                 e.dataTransfer.setData('application/json', JSON.stringify({type:'expert', ...exp}));
                 e.dataTransfer.effectAllowed = 'copy';
@@ -4467,12 +4794,12 @@ HTML_TEMPLATE = """
             if (isCustom) {
                 card.querySelector('.orch-expert-del-btn').addEventListener('click', async (ev) => {
                     ev.stopPropagation();
-                    if (!confirm('删除自定义专家 "' + exp.name + '"？')) return;
+                    if (!confirm(t('orch_confirm_del_expert', {name: exp.name}))) return;
                     try {
                         await fetch('/proxy_visual/experts/custom/' + encodeURIComponent(exp.tag), { method: 'DELETE' });
-                        orchToast('已删除: ' + exp.name);
+                        orchToast(t('orch_toast_expert_deleted', {name: exp.name}));
                         orchLoadExperts();
-                    } catch(e) { orchToast('删除失败'); }
+                    } catch(e) { orchToast(t('orch_toast_expert_del_fail')); }
                 });
                 custList.appendChild(card);
             } else {
@@ -4481,20 +4808,20 @@ HTML_TEMPLATE = """
         });
 
         if (!custList.children.length) {
-            custList.innerHTML = '<div style="padding:6px 10px;font-size:10px;color:#d1d5db;text-align:center;">暂无自定义专家</div>';
+            custList.innerHTML = '<div style="padding:6px 10px;font-size:10px;color:#d1d5db;text-align:center;">' + t('orch_no_custom') + '</div>';
         }
     }
 
     // ── Load session agents ──
     async function orchLoadSessionAgents() {
         const list = document.getElementById('orch-expert-list-sessions');
-        list.innerHTML = '<div style="padding:6px 10px;font-size:10px;color:#9ca3af;text-align:center;">⏳ 加载中...</div>';
+        list.innerHTML = '<div style="padding:6px 10px;font-size:10px;color:#9ca3af;text-align:center;">' + t('orch_modal_loading') + '</div>';
         try {
             const resp = await fetch('/proxy_sessions');
             const data = await resp.json();
             list.innerHTML = '';
             if (!data.sessions || data.sessions.length === 0) {
-                list.innerHTML = '<div style="padding:6px 10px;font-size:10px;color:#d1d5db;text-align:center;">暂无 Session</div>';
+                list.innerHTML = '<div style="padding:6px 10px;font-size:10px;color:#d1d5db;text-align:center;">' + t('orch_no_session') + '</div>';
                 return;
             }
             data.sessions.sort((a, b) => b.session_id.localeCompare(a.session_id));
@@ -4503,7 +4830,7 @@ HTML_TEMPLATE = """
                 card.className = 'orch-expert-card';
                 card.draggable = true;
                 const title = s.title || 'Untitled';
-                card.innerHTML = `<span class="orch-emoji">🤖</span><div style="min-width:0;flex:1;"><div class="orch-name">${escapeHtml(title)}</div><div class="orch-tag" style="color:#6366f1;font-family:monospace;">#${s.session_id.slice(-8)}</div></div><span class="orch-temp" style="font-size:9px;color:#9ca3af;">${s.message_count||0}msg</span>`;
+                card.innerHTML = `<span class="orch-emoji">🤖</span><div style="min-width:0;flex:1;"><div class="orch-name" title="${escapeHtml(title)}">${escapeHtml(title)}</div><div class="orch-tag" style="color:#6366f1;font-family:monospace;">#${s.session_id.slice(-8)}</div></div><span class="orch-temp" style="font-size:9px;color:#9ca3af;">${s.message_count||0}msg</span>`;
                 const sessionData = {type:'session_agent', name: title, tag: 'session', emoji:'🤖', temperature: 0.7, session_id: s.session_id};
                 card.addEventListener('dragstart', e => {
                     e.dataTransfer.setData('application/json', JSON.stringify(sessionData));
@@ -4513,7 +4840,57 @@ HTML_TEMPLATE = """
                 list.appendChild(card);
             }
         } catch(e) {
-            list.innerHTML = '<div style="padding:6px 10px;font-size:10px;color:#dc2626;text-align:center;">❌ 加载失败</div>';
+            list.innerHTML = '<div style="padding:6px 10px;font-size:10px;color:#dc2626;text-align:center;">' + t('orch_load_fail') + '</div>';
+        }
+    }
+
+    // ── Load OpenClaw sessions ──
+    async function orchLoadOpenClawSessions() {
+        const list = document.getElementById('orch-expert-list-openclaw');
+        if (!list) return;
+        list.innerHTML = '<div style="padding:6px 10px;font-size:10px;color:#9ca3af;text-align:center;">⏳ ' + t('loading') + '</div>';
+        try {
+            const resp = await fetch('/proxy_openclaw_sessions');
+            const data = await resp.json();
+            list.innerHTML = '';
+            if (!data.available) {
+                list.innerHTML = '<div style="padding:6px 10px;font-size:10px;color:#d1d5db;text-align:center;">🚫 Not configured</div>';
+                return;
+            }
+            if (!data.sessions || data.sessions.length === 0) {
+                list.innerHTML = '<div style="padding:6px 10px;font-size:10px;color:#d1d5db;text-align:center;">No OpenClaw sessions</div>';
+                return;
+            }
+            const openclawUrl = data.openclaw_api_url || '';
+            const openclawKey = data.openclaw_api_key || '';
+            for (const s of data.sessions) {
+                const card = document.createElement('div');
+                card.className = 'orch-expert-card';
+                card.draggable = true;
+                const title = s.key || 'Untitled';
+                const chan = (s.channel && s.channel !== 'unknown' && s.channel !== 'auto') ? s.channel : '';
+                const mdl = (s.model && s.model !== 'unknown' && s.model !== 'auto') ? s.model : '';
+                const tagParts = [chan, mdl].filter(Boolean).join(' · ');
+                card.innerHTML = `<span class="orch-emoji">🦞</span><div style="min-width:0;flex:1;"><div class="orch-name" title="${escapeHtml(title)}">${escapeHtml(title)}</div>${tagParts ? '<div class="orch-tag" style="color:#10b981;font-family:monospace;">' + escapeHtml(tagParts) + '</div>' : ''}</div><span class="orch-temp" style="font-size:9px;color:#9ca3af;">${s.contextTokens||0}tk</span>`;
+                // s.key is already in full format like "agent:main:sessionName"
+                const sessionKey = s.key || 'default';
+                const modelStr = sessionKey.startsWith('agent:') ? sessionKey : ('agent:main:' + sessionKey);
+                const nodeData = {
+                    type: 'external', name: title, tag: 'openclaw', emoji: '🦞', temperature: 0.7,
+                    api_url: openclawUrl, api_key: openclawKey,
+                    model: modelStr,
+                    headers: {'x-openclaw-session-key': sessionKey}, ext_id: sessionKey,
+                    openclaw_session: s
+                };
+                card.addEventListener('dragstart', e => {
+                    e.dataTransfer.setData('application/json', JSON.stringify(nodeData));
+                    e.dataTransfer.effectAllowed = 'copy';
+                });
+                card.addEventListener('dblclick', () => orchAddNodeCenter(nodeData));
+                list.appendChild(card);
+            }
+        } catch(e) {
+            list.innerHTML = '<div style="padding:6px 10px;font-size:10px;color:#dc2626;text-align:center;">❌ ' + t('error') + '</div>';
         }
     }
 
@@ -4524,18 +4901,18 @@ HTML_TEMPLATE = """
         overlay.id = 'orch-add-expert-overlay';
         overlay.innerHTML = `
             <div class="orch-modal" style="min-width:380px;max-width:460px;">
-                <h3>🛠️ 添加自定义专家</h3>
+                <h3>${t('orch_add_expert_title')}</h3>
                 <div style="display:flex;flex-direction:column;gap:8px;margin:10px 0;">
-                    <label style="font-size:11px;font-weight:600;color:#374151;">名称 <input id="orch-ce-name" type="text" placeholder="如：金融分析师" style="width:100%;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;margin-top:2px;"></label>
-                    <label style="font-size:11px;font-weight:600;color:#374151;">Tag (英文) <input id="orch-ce-tag" type="text" placeholder="如：finance" style="width:100%;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;margin-top:2px;"></label>
-                    <label style="font-size:11px;font-weight:600;color:#374151;">Temperature <input id="orch-ce-temp" type="number" value="0.7" min="0" max="2" step="0.1" style="width:80px;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;margin-top:2px;"></label>
-                    <label style="font-size:11px;font-weight:600;color:#374151;">Persona (角色描述)
-                        <textarea id="orch-ce-persona" rows="4" placeholder="描述这位专家的角色、专长和行为风格..." style="width:100%;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;margin-top:2px;resize:vertical;"></textarea>
+                    <label style="font-size:11px;font-weight:600;color:#374151;">${t('orch_label_name')} <input id="orch-ce-name" type="text" placeholder="${t('orch_ph_name')}" style="width:100%;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;margin-top:2px;"></label>
+                    <label style="font-size:11px;font-weight:600;color:#374151;">${t('orch_label_tag')} <input id="orch-ce-tag" type="text" placeholder="${t('orch_ph_tag')}" style="width:100%;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;margin-top:2px;"></label>
+                    <label style="font-size:11px;font-weight:600;color:#374151;">${t('orch_label_temp')} <input id="orch-ce-temp" type="number" value="0.7" min="0" max="2" step="0.1" style="width:80px;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;margin-top:2px;"></label>
+                    <label style="font-size:11px;font-weight:600;color:#374151;">${t('orch_label_persona')}
+                        <textarea id="orch-ce-persona" rows="4" placeholder="${t('orch_ph_persona')}" style="width:100%;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;margin-top:2px;resize:vertical;"></textarea>
                     </label>
                 </div>
                 <div class="orch-modal-btns">
-                    <button id="orch-ce-cancel" style="padding:6px 14px;border-radius:6px;border:1px solid #d1d5db;background:white;color:#374151;cursor:pointer;font-size:12px;">取消</button>
-                    <button id="orch-ce-save" style="padding:6px 14px;border-radius:6px;border:none;background:#2563eb;color:white;cursor:pointer;font-size:12px;">保存</button>
+                    <button id="orch-ce-cancel" style="padding:6px 14px;border-radius:6px;border:1px solid #d1d5db;background:white;color:#374151;cursor:pointer;font-size:12px;">${t('orch_modal_cancel')}</button>
+                    <button id="orch-ce-save" style="padding:6px 14px;border-radius:6px;border:none;background:#2563eb;color:white;cursor:pointer;font-size:12px;">${t('orch_modal_save')}</button>
                 </div>
             </div>
         `;
@@ -4547,7 +4924,7 @@ HTML_TEMPLATE = """
             const tag = document.getElementById('orch-ce-tag').value.trim();
             const temperature = parseFloat(document.getElementById('orch-ce-temp').value) || 0.7;
             const persona = document.getElementById('orch-ce-persona').value.trim();
-            if (!name || !tag || !persona) { orchToast('请填写完整信息'); return; }
+            if (!name || !tag || !persona) { orchToast(t('orch_toast_fill_info')); return; }
             try {
                 const r = await fetch('/proxy_visual/experts/custom', {
                     method: 'POST', headers: {'Content-Type':'application/json'},
@@ -4555,13 +4932,13 @@ HTML_TEMPLATE = """
                 });
                 const res = await r.json();
                 if (r.ok) {
-                    orchToast('自定义专家已添加: ' + name);
+                    orchToast(t('orch_toast_custom_added', {name}));
                     overlay.remove();
                     orchLoadExperts();
                 } else {
-                    orchToast('失败: ' + (res.detail || res.error || '未知错误'));
+                    orchToast(t('orch_toast_load_fail') + ': ' + (res.detail || res.error || ''));
                 }
-            } catch(e) { orchToast('网络错误'); }
+            } catch(e) { orchToast(t('orch_toast_net_error')); }
         });
     }
 
@@ -4570,10 +4947,10 @@ HTML_TEMPLATE = """
         // Manual card
         const mc = document.getElementById('orch-manual-card');
         mc.addEventListener('dragstart', e => {
-            e.dataTransfer.setData('application/json', JSON.stringify({type:'manual', name:'手动注入', tag:'manual', emoji:'📝', temperature:0}));
+            e.dataTransfer.setData('application/json', JSON.stringify({type:'manual', name:t('orch_manual_inject'), tag:'manual', emoji:'📝', temperature:0}));
             e.dataTransfer.effectAllowed = 'copy';
         });
-        mc.addEventListener('dblclick', () => orchAddNodeCenter({type:'manual', name:'手动注入', tag:'manual', emoji:'📝', temperature:0}));
+        mc.addEventListener('dblclick', () => orchAddNodeCenter({type:'manual', name:t('orch_manual_inject'), tag:'manual', emoji:'📝', temperature:0}));
     }
 
     // ── Settings ──
@@ -4594,10 +4971,10 @@ HTML_TEMPLATE = """
     // ── Node Management ──
     function orchNextInstance(data) {
         // Compute next instance number for this agent identity
-        const key = data.type === 'session_agent' ? ('sa:' + (data.session_id||'')) : ('ex:' + (data.tag||'custom'));
+        const key = data.type === 'session_agent' ? ('sa:' + (data.session_id||'')) : data.type === 'external' ? ('ext:' + (data.ext_id || data.tag||'custom')) : ('ex:' + (data.tag||'custom'));
         let maxInst = 0;
         orch.nodes.forEach(n => {
-            const nk = n.type === 'session_agent' ? ('sa:' + (n.session_id||'')) : ('ex:' + (n.tag||'custom'));
+            const nk = n.type === 'session_agent' ? ('sa:' + (n.session_id||'')) : n.type === 'external' ? ('ext:' + (n.ext_id || n.tag||'custom')) : ('ex:' + (n.tag||'custom'));
             if (nk === key && n.instance > maxInst) maxInst = n.instance;
         });
         return maxInst + 1;
@@ -4606,7 +4983,15 @@ HTML_TEMPLATE = """
     function orchAddNode(data, x, y) {
         const id = 'on' + orch.nid++;
         const inst = data.instance || orchNextInstance(data);
-        const node = { id, name: data.name, tag: data.tag||'custom', emoji: data.emoji||'⭐', x: Math.round(x), y: Math.round(y), type: data.type||'expert', temperature: data.temperature||0.5, author: data.author||'主持人', content: data.content||'', session_id: data.session_id||'', source: data.source||'', instance: inst };
+        const node = { id, name: data.name, tag: data.tag||'custom', emoji: data.emoji||'⭐', x: Math.round(x), y: Math.round(y), type: data.type||'expert', temperature: data.temperature||0.5, author: data.author||t('orch_default_author'), content: data.content||'', session_id: data.session_id||'', source: data.source||'', instance: inst };
+        // Preserve external agent extra fields
+        if (data.type === 'external') {
+            node.api_url = data.api_url || '';
+            node.ext_id = data.ext_id || '1';
+            if (data.headers && typeof data.headers === 'object') node.headers = data.headers;
+            if (data.api_key) node.api_key = data.api_key;
+            if (data.model) node.model = data.model;
+        }
         orch.nodes.push(node);
         orchRenderNode(node);
         orchUpdateYaml();
@@ -4629,19 +5014,39 @@ HTML_TEMPLATE = """
         const area = document.getElementById('orch-canvas-inner');
         const el = document.createElement('div');
         const isSession = node.type === 'session_agent';
-        el.className = 'orch-node' + (node.type === 'manual' ? ' manual-type' : '') + (isSession ? ' session-type' : '');
+        const isExternal = node.type === 'external';
+        el.className = 'orch-node' + (node.type === 'manual' ? ' manual-type' : '') + (isSession ? ' session-type' : '') + (isExternal ? ' external-type' : '');
         el.id = 'onode-' + node.id;
         el.style.left = node.x + 'px';
         el.style.top = node.y + 'px';
         if (isSession) el.style.borderColor = '#6366f1';
+        if (isExternal) el.style.borderColor = '#2ecc71';
 
         const status = orch.sessionStatuses[node.tag] || orch.sessionStatuses[node.name] || 'idle';
         const instBadge = `<span style="display:inline-block;background:#2563eb;color:#fff;font-size:9px;font-weight:700;border-radius:50%;min-width:16px;height:16px;line-height:16px;text-align:center;margin-left:3px;flex-shrink:0;">${node.instance||1}</span>`;
-        const tagLine = isSession ? `<div class="orch-node-tag" style="color:#6366f1;font-family:monospace;">#${(node.session_id||'').slice(-8)}</div>` : `<div class="orch-node-tag">${escapeHtml(node.tag)}</div>`;
+        let tagLine;
+        if (isSession) {
+            tagLine = `<div class="orch-node-tag" style="color:#6366f1;font-family:monospace;">#${(node.session_id||'').slice(-8)}</div>`;
+        } else if (isExternal) {
+            let extDesc = '';
+            if (node.api_url) {
+                extDesc = `🌐 ${node.api_url}`;
+                if (node.model) extDesc += '\\n📦 ' + node.model;
+            } else {
+                extDesc = '⚠️ Double-click to set URL';
+            }
+            if (node.headers && typeof node.headers === 'object') {
+                const hdrParts = Object.entries(node.headers).map(([k,v]) => `${k}: ${v}`);
+                if (hdrParts.length) extDesc += '\\n' + hdrParts.join('\\n');
+            }
+            tagLine = `<div class="orch-node-tag" style="color:#2ecc71;white-space:pre-line;word-break:break-all;font-size:9px;">${escapeHtml(extDesc)}</div>`;
+        } else {
+            tagLine = `<div class="orch-node-tag">${escapeHtml(node.tag)}</div>`;
+        }
         el.innerHTML = `
             <span class="orch-node-emoji">${node.emoji}</span>
             <div style="min-width:0;flex:1;"><div class="orch-node-name" style="display:flex;align-items:center;">${escapeHtml(node.name)}${instBadge}</div>${tagLine}</div>
-            <div class="orch-node-del" title="移除">×</div>
+            <div class="orch-node-del" title="${t('orch_node_remove')}">×</div>
             <div class="orch-port port-in" data-node="${node.id}" data-dir="in"></div>
             <div class="orch-port port-out" data-node="${node.id}" data-dir="out"></div>
             <div class="orch-node-status ${status}"></div>
@@ -4685,7 +5090,7 @@ HTML_TEMPLATE = """
             if (!orch.selectedNodes.has(node.id)) { orchClearSelection(); orchSelectNode(node.id); }
             orchShowContextMenu(e.clientX, e.clientY, node);
         });
-        el.addEventListener('dblclick', () => { if (node.type === 'manual') orchShowManualModal(node); });
+        el.addEventListener('dblclick', () => { if (node.type === 'manual') orchShowManualModal(node); else if (node.type === 'external') orchShowExternalModal(node); });
         area.appendChild(el);
     }
 
@@ -4756,7 +5161,7 @@ HTML_TEMPLATE = """
 
     // ── Group Management ──
     function orchCreateGroup(type) {
-        if (orch.selectedNodes.size < 2 && type !== 'all') { orchToast('请先选中至少2个节点'); return; }
+        if (orch.selectedNodes.size < 2 && type !== 'all') { orchToast(t('orch_toast_select_2')); return; }
         const members = [...orch.selectedNodes];
         const nodes = members.map(id => orch.nodes.find(n=>n.id===id)).filter(Boolean);
         const pad = 30;
@@ -4765,7 +5170,7 @@ HTML_TEMPLATE = """
         const w = Math.max(...nodes.map(n=>n.x+120)) - x + pad;
         const h = Math.max(...nodes.map(n=>n.y+50)) - y + pad;
         const id = 'og' + orch.gid++;
-        const labelMap = {parallel:'🔀 并行', all:'👥 全员'};
+        const labelMap = {parallel: t('orch_group_parallel'), all: t('orch_group_all')};
         const group = { id, name: labelMap[type]||type, type, x, y, w, h, nodeIds: members };
         orch.groups.push(group);
         orchRenderGroup(group);
@@ -4778,7 +5183,7 @@ HTML_TEMPLATE = """
         el.className = 'orch-group ' + group.type;
         el.id = 'ogroup-' + group.id;
         el.style.cssText = `left:${group.x}px;top:${group.y}px;width:${group.w}px;height:${group.h}px;`;
-        el.innerHTML = `<span class="orch-group-label">${group.name}</span><div class="orch-group-del" title="解散">×</div>`;
+        el.innerHTML = `<span class="orch-group-label">${group.name}</span><div class="orch-group-del" title="${t('orch_group_dissolve')}">×</div>`;
         el.querySelector('.orch-group-del').addEventListener('click', e => {
             e.stopPropagation();
             orch.groups = orch.groups.filter(g=>g.id!==group.id);
@@ -4914,25 +5319,25 @@ HTML_TEMPLATE = """
 
         // ── Node-specific: duplicate / set instance ──
         if (targetNode) {
-            items.push({label: '📋 复用此专家 (同序号)', action: () => {
+            items.push({label: t('orch_ctx_duplicate'), action: () => {
                 orchAddNode({...targetNode, instance: targetNode.instance}, targetNode.x + 40, targetNode.y + 40);
             }});
-            items.push({label: '➕ 新建实例 (新序号)', action: () => {
+            items.push({label: t('orch_ctx_new_instance'), action: () => {
                 orchAddNode({...targetNode, instance: undefined}, targetNode.x + 40, targetNode.y + 40);
             }});
             items.push({divider: true});
         }
 
         if (hasSelection && orch.selectedNodes.size >= 2) {
-            items.push({label: '🔀 创建并行分组', action: () => orchCreateGroup('parallel')});
-            items.push({label: '👥 创建全员分组', action: () => orchCreateGroup('all')});
+            items.push({label: t('orch_ctx_group_parallel'), action: () => orchCreateGroup('parallel')});
+            items.push({label: t('orch_ctx_group_all'), action: () => orchCreateGroup('all')});
             items.push({divider: true});
         }
         if (hasSelection) {
-            items.push({label: '🗑️ 删除选中', action: () => { orch.selectedNodes.forEach(id => orchRemoveNode(id)); }});
+            items.push({label: t('orch_ctx_delete'), action: () => { orch.selectedNodes.forEach(id => orchRemoveNode(id)); }});
         }
-        items.push({label: '🔄 刷新 YAML', action: () => orchUpdateYaml()});
-        items.push({label: '🗑️ 清空画布', action: () => orchClearCanvas()});
+        items.push({label: t('orch_ctx_refresh_yaml'), action: () => orchUpdateYaml()});
+        items.push({label: t('orch_ctx_clear'), action: () => orchClearCanvas()});
 
         items.forEach(item => {
             if (item.divider) { const d = document.createElement('div'); d.className='orch-menu-divider'; menu.appendChild(d); return; }
@@ -4954,12 +5359,12 @@ HTML_TEMPLATE = """
         overlay.className = 'orch-modal-overlay';
         overlay.id = 'orch-manual-modal';
         overlay.innerHTML = `<div class="orch-modal">
-            <h3>📝 编辑手动注入内容</h3>
-            <input type="text" id="orch-man-author" value="${node.author||'主持人'}" placeholder="作者">
-            <textarea id="orch-man-content" placeholder="注入内容...">${node.content||''}</textarea>
+            <h3>${t('orch_modal_edit_manual')}</h3>
+            <input type="text" id="orch-man-author" value="${node.author||t('orch_default_author')}" placeholder="${t('orch_modal_author_ph')}">
+            <textarea id="orch-man-content" placeholder="${t('orch_modal_content_ph')}">${node.content||''}</textarea>
             <div class="orch-modal-btns">
-                <button onclick="document.getElementById('orch-manual-modal').remove()">取消</button>
-                <button class="primary" onclick="orchSaveManual('${node.id}')">保存</button>
+                <button onclick="document.getElementById('orch-manual-modal').remove()">${t('orch_modal_cancel')}</button>
+                <button class="primary" onclick="orchSaveManual('${node.id}')">${t('orch_modal_save')}</button>
             </div>
         </div>`;
         document.body.appendChild(overlay);
@@ -4972,6 +5377,52 @@ HTML_TEMPLATE = """
             node.content = document.getElementById('orch-man-content').value;
         }
         document.getElementById('orch-manual-modal')?.remove();
+        orchUpdateYaml();
+    }
+
+    // ── External Agent Edit Modal ──
+    function orchShowExternalModal(node) {
+        const overlay = document.createElement('div');
+        overlay.className = 'orch-modal-overlay';
+        overlay.id = 'orch-external-modal';
+        const hdrs = (node.headers && typeof node.headers === 'object') ? JSON.stringify(node.headers, null, 2) : '';
+        overlay.innerHTML = `<div class="orch-modal" style="max-width:480px;">
+            <h3>🌐 ${escapeHtml(node.name)} — External Agent</h3>
+            <label style="font-size:11px;color:#9ca3af;margin-bottom:2px;display:block;">API URL *</label>
+            <input type="text" id="orch-ext-url" value="${escapeHtml(node.api_url||'')}" placeholder="https://api.example.com/v1" style="font-family:monospace;font-size:12px;">
+            <label style="font-size:11px;color:#9ca3af;margin-bottom:2px;margin-top:8px;display:block;">API Key</label>
+            <input type="text" id="orch-ext-key" value="${escapeHtml(node.api_key||'')}" placeholder="sk-xxx (optional)" style="font-family:monospace;font-size:12px;">
+            <label style="font-size:11px;color:#9ca3af;margin-bottom:2px;margin-top:8px;display:block;">Model</label>
+            <input type="text" id="orch-ext-model" value="${escapeHtml(node.model||'')}" placeholder="gpt-4 / deepseek-chat (optional)" style="font-family:monospace;font-size:12px;">
+            <label style="font-size:11px;color:#9ca3af;margin-bottom:2px;margin-top:8px;display:block;">Headers (JSON)</label>
+            <textarea id="orch-ext-headers" placeholder='{"X-Custom": "value"}' style="font-family:monospace;font-size:11px;min-height:60px;">${escapeHtml(hdrs)}</textarea>
+            <div class="orch-modal-btns">
+                <button onclick="document.getElementById('orch-external-modal').remove()">${t('orch_modal_cancel')}</button>
+                <button class="primary" onclick="orchSaveExternal('${node.id}')">${t('orch_modal_save')}</button>
+            </div>
+        </div>`;
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    }
+    function orchSaveExternal(nodeId) {
+        const node = orch.nodes.find(n=>n.id===nodeId);
+        if (node) {
+            node.api_url = document.getElementById('orch-ext-url').value.trim();
+            node.api_key = document.getElementById('orch-ext-key').value.trim();
+            node.model = document.getElementById('orch-ext-model').value.trim();
+            const hdrsStr = document.getElementById('orch-ext-headers').value.trim();
+            if (hdrsStr) {
+                try { node.headers = JSON.parse(hdrsStr); } catch(e) { alert('Headers JSON parse error: ' + e.message); return; }
+            } else {
+                node.headers = {};
+            }
+            // Re-render node to update display
+            const el = document.getElementById('onode-' + nodeId);
+            if (el) el.remove();
+            orchRenderNode(node);
+            orchRedrawEdges();
+        }
+        document.getElementById('orch-external-modal')?.remove();
         orchUpdateYaml();
     }
 
@@ -4991,7 +5442,7 @@ HTML_TEMPLATE = """
         orchUpdateStatus();
         const data = orchGetLayoutData();
         if (orch.nodes.length === 0) {
-            document.getElementById('orch-yaml-content').textContent = '拖入专家后自动生成...';
+            document.getElementById('orch-yaml-content').textContent = t('orch_rule_yaml_hint');
             return;
         }
         try {
@@ -5009,7 +5460,7 @@ HTML_TEMPLATE = """
     let orchTargetSessionId = null;
 
     async function orchGenerateAgentYaml() {
-        if (orch.nodes.length === 0) { orchToast('请先添加专家节点'); return; }
+        if (orch.nodes.length === 0) { orchToast(t('orch_toast_add_first')); return; }
         orchShowSessionSelectModal();
     }
 
@@ -5020,14 +5471,14 @@ HTML_TEMPLATE = """
 
         overlay.innerHTML = `
             <div class="orch-modal" style="min-width:400px;max-width:500px;">
-                <h3>🎯 选择目标 Agent Session</h3>
-                <p style="font-size:12px;color:#6b7280;margin-bottom:10px;">选择一个已有的对话 Session，或新建一个，生成完成后可跳转继续对话。</p>
+                <h3>${t('orch_modal_select_session')}</h3>
+                <p style="font-size:12px;color:#6b7280;margin-bottom:10px;">${t('orch_modal_select_desc')}</p>
                 <div class="orch-session-list" id="orch-session-select-list">
-                    <div style="text-align:center;padding:20px;color:#9ca3af;font-size:12px;">⏳ 加载中...</div>
+                    <div style="text-align:center;padding:20px;color:#9ca3af;font-size:12px;">${t('orch_modal_loading')}</div>
                 </div>
                 <div class="orch-modal-btns">
-                    <button id="orch-session-cancel-btn" style="padding:6px 14px;border-radius:6px;border:1px solid #d1d5db;background:white;color:#374151;cursor:pointer;font-size:12px;">取消</button>
-                    <button id="orch-session-confirm-btn" disabled style="padding:6px 14px;border-radius:6px;border:none;background:#2563eb;color:white;cursor:pointer;font-size:12px;opacity:0.5;">确认并生成</button>
+                    <button id="orch-session-cancel-btn" style="padding:6px 14px;border-radius:6px;border:1px solid #d1d5db;background:white;color:#374151;cursor:pointer;font-size:12px;">${t('orch_modal_cancel')}</button>
+                    <button id="orch-session-confirm-btn" disabled style="padding:6px 14px;border-radius:6px;border:none;background:#2563eb;color:white;cursor:pointer;font-size:12px;opacity:0.5;">${t('orch_modal_confirm_gen')}</button>
                 </div>
             </div>
         `;
@@ -5047,7 +5498,7 @@ HTML_TEMPLATE = """
             const newSessionId = Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
             const newItem = document.createElement('div');
             newItem.className = 'orch-session-new';
-            newItem.innerHTML = `<span style="font-size:18px;">🆕</span><div style="flex:1;"><div style="font-size:13px;font-weight:500;color:#2563eb;">新建对话</div><div style="font-size:10px;color:#9ca3af;font-family:monospace;">#${newSessionId.slice(-6)}</div></div>`;
+            newItem.innerHTML = `<span style="font-size:18px;">🆕</span><div style="flex:1;"><div style="font-size:13px;font-weight:500;color:#2563eb;">${t('orch_modal_new_session')}</div><div style="font-size:10px;color:#9ca3af;font-family:monospace;">#${newSessionId.slice(-6)}</div></div>`;
             newItem.addEventListener('click', () => {
                 listEl.querySelectorAll('.orch-session-item,.orch-session-new').forEach(el => el.classList.remove('selected'));
                 newItem.classList.add('selected');
@@ -5062,7 +5513,7 @@ HTML_TEMPLATE = """
                 for (const s of data.sessions) {
                     const item = document.createElement('div');
                     item.className = 'orch-session-item';
-                    item.innerHTML = `<span class="orch-session-icon">💬</span><div style="flex:1;min-width:0;"><div class="orch-session-title">${escapeHtml(s.title || 'Untitled')}</div><div class="orch-session-id">#${s.session_id.slice(-6)} · ${s.message_count || 0} 条消息</div></div>`;
+                    item.innerHTML = `<span class="orch-session-icon">💬</span><div style="flex:1;min-width:0;"><div class="orch-session-title">${escapeHtml(s.title || 'Untitled')}</div><div class="orch-session-id">#${s.session_id.slice(-6)} · ${t('orch_msg_count', {count: s.message_count||0})}</div></div>`;
                     item.addEventListener('click', () => {
                         listEl.querySelectorAll('.orch-session-item,.orch-session-new').forEach(el => el.classList.remove('selected'));
                         item.classList.add('selected');
@@ -5074,7 +5525,7 @@ HTML_TEMPLATE = """
                 }
             }
         } catch(e) {
-            listEl.innerHTML = '<div style="text-align:center;padding:20px;color:#dc2626;font-size:12px;">❌ 加载 Session 列表失败</div>';
+            listEl.innerHTML = '<div style="text-align:center;padding:20px;color:#dc2626;font-size:12px;">' + t('orch_load_session_fail') + '</div>';
         }
 
         overlay.querySelector('#orch-session-confirm-btn').addEventListener('click', () => {
@@ -5093,10 +5544,10 @@ HTML_TEMPLATE = """
         const statusEl = document.getElementById('orch-agent-status');
         const promptEl = document.getElementById('orch-prompt-content');
         const yamlEl = document.getElementById('orch-agent-yaml');
-        statusEl.textContent = '🔄 正在与 Agent 通信 (Session: #' + (orchTargetSessionId||'').slice(-6) + ')...';
+        statusEl.textContent = t('orch_status_communicating', {id: (orchTargetSessionId||'').slice(-6)});
         statusEl.style.cssText = 'color:#2563eb;background:#eff6ff;border-color:#bfdbfe;';
-        promptEl.textContent = '⏳ 生成中...';
-        yamlEl.textContent = '⏳ 等待 Agent 返回...';
+        promptEl.textContent = t('orch_status_generating');
+        yamlEl.textContent = t('orch_status_waiting');
 
         const oldBtn = document.getElementById('orch-goto-chat-container');
         if (oldBtn) oldBtn.remove();
@@ -5109,30 +5560,30 @@ HTML_TEMPLATE = """
             if (res.prompt) promptEl.textContent = res.prompt;
             if (res.error) {
                 yamlEl.textContent = '# ⚠️ ' + res.error;
-                statusEl.textContent = '⚠️ ' + (res.error.includes('401') ? '认证失败' : 'Agent 不可用');
+                statusEl.textContent = '⚠️ ' + (res.error.includes('401') ? t('orch_status_auth_fail') : t('orch_status_agent_unavail'));
                 statusEl.style.cssText = 'color:#dc2626;background:#fef2f2;border-color:#fca5a5;';
-                orchToast('Agent 不可用');
+                orchToast(t('orch_toast_agent_unavail'));
                 return;
             }
             if (res.agent_yaml) {
                 yamlEl.textContent = res.agent_yaml;
                 if (res.validation?.valid) {
-                    let statusMsg = `✅ 有效 YAML — ${res.validation.steps} 步骤 [${res.validation.step_types.join(', ')}]`;
+                    let statusMsg = t('orch_yaml_valid', {steps: res.validation.steps, types: res.validation.step_types.join(', ')});
                     if (res.saved_file && !res.saved_file.startsWith('save_error')) {
-                        statusMsg += ` | 💾 已保存: ${res.saved_file}`;
+                        statusMsg += t('orch_yaml_saved_suffix', {file: res.saved_file});
                     }
                     statusEl.textContent = statusMsg;
                     statusEl.style.cssText = 'color:#16a34a;background:#f0fdf4;border-color:#86efac;';
-                    orchToast(res.saved_file ? 'YAML 已生成并保存! ✅' : 'Agent 生成了有效的 YAML! ✅');
+                    orchToast(res.saved_file ? t('orch_toast_yaml_generated') : t('orch_toast_agent_valid'));
                 } else {
-                    statusEl.textContent = `⚠️ YAML 校验问题: ${res.validation?.error||''}`;
+                    statusEl.textContent = t('orch_yaml_warn', {error: res.validation?.error||''});
                     statusEl.style.cssText = 'color:#d97706;background:#fffbeb;border-color:#fbbf24;';
                 }
                 orchShowGotoChatButton();
             }
         } catch(e) {
-            promptEl.textContent = '# 通信失败: ' + e.message;
-            statusEl.textContent = '❌ 连接错误';
+            promptEl.textContent = t('orch_comm_fail', {msg: e.message});
+            statusEl.textContent = t('orch_status_conn_error');
             statusEl.style.cssText = 'color:#dc2626;background:#fef2f2;border-color:#fca5a5;';
         }
     }
@@ -5150,7 +5601,7 @@ HTML_TEMPLATE = """
         const sessionLabel = '#' + orchTargetSessionId.slice(-6);
         container.innerHTML = `
             <button class="orch-goto-chat-btn" onclick="orchGotoChat()">
-                💬 跳转到对话 ${escapeHtml(sessionLabel)} 继续聊天
+                ${t('orch_goto_chat', {session: escapeHtml(sessionLabel)})}
             </button>
         `;
 
@@ -5161,7 +5612,7 @@ HTML_TEMPLATE = """
     }
 
     async function orchGotoChat() {
-        if (!orchTargetSessionId) { orchToast('没有选中的 Session'); return; }
+        if (!orchTargetSessionId) { orchToast(t('orch_toast_no_session')); return; }
 
         const prevSessionId = currentSessionId;
         if (currentSessionId === orchTargetSessionId) {
@@ -5171,7 +5622,7 @@ HTML_TEMPLATE = """
         switchPage('chat');
         await switchToSession(orchTargetSessionId);
 
-        orchToast('已跳转到对话 #' + orchTargetSessionId.slice(-6));
+        orchToast(t('orch_toast_jumped', {id: orchTargetSessionId.slice(-6)}));
     }
 
     // ── Session Status ──
@@ -5197,9 +5648,9 @@ HTML_TEMPLATE = """
                 );
                 dot.className = 'orch-node-status ' + (isRunning ? 'running' : 'idle');
             });
-            orchToast('Session 状态已更新');
+            orchToast(t('orch_toast_session_updated'));
         } catch(e) {
-            orchToast('获取状态失败');
+            orchToast(t('orch_toast_session_fail'));
         }
     }
 
@@ -5233,25 +5684,25 @@ HTML_TEMPLATE = """
         orchRenderEdges();
         orch.groups.forEach(g => orchUpdateGroupBounds(g));
         orchUpdateYaml();
-        orchToast('已自动排列');
+        orchToast(t('orch_toast_arranged'));
     }
 
     async function orchSaveLayout() {
-        const name = prompt('布局名称:', 'my-layout');
+        const name = prompt(t('orch_prompt_layout_name'), 'my-layout');
         if (!name) return;
         const data = orchGetLayoutData();
         data.name = name;
         try {
             await fetch('/proxy_visual/save-layout', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
-            orchToast('已保存: ' + name);
-        } catch(e) { orchToast('保存失败'); }
+            orchToast(t('orch_toast_saved', {name}));
+        } catch(e) { orchToast(t('orch_toast_save_fail')); }
     }
 
     async function orchLoadLayout() {
         try {
             const r = await fetch('/proxy_visual/load-layouts');
             const layouts = await r.json();
-            if (!layouts.length) { orchToast('没有已保存的布局'); return; }
+            if (!layouts.length) { orchToast(t('orch_toast_no_layouts')); return; }
 
             // Build visual selection modal
             const overlay = document.createElement('div');
@@ -5259,12 +5710,12 @@ HTML_TEMPLATE = """
             overlay.id = 'orch-load-layout-overlay';
             overlay.innerHTML = `
                 <div class="orch-modal" style="min-width:360px;max-width:460px;">
-                    <h3>📂 选择布局</h3>
+                    <h3>${t('orch_modal_select_layout')}</h3>
                     <div class="orch-session-list" id="orch-layout-select-list" style="max-height:300px;overflow-y:auto;"></div>
                     <div class="orch-modal-btns">
-                        <button id="orch-layout-cancel-btn" style="padding:6px 14px;border-radius:6px;border:1px solid #d1d5db;background:white;color:#374151;cursor:pointer;font-size:12px;">取消</button>
-                        <button id="orch-layout-del-btn" style="padding:6px 14px;border-radius:6px;border:1px solid #fca5a5;background:#fef2f2;color:#dc2626;cursor:pointer;font-size:12px;display:none;">🗑️ 删除</button>
-                        <button id="orch-layout-confirm-btn" disabled style="padding:6px 14px;border-radius:6px;border:none;background:#2563eb;color:white;cursor:pointer;font-size:12px;opacity:0.5;">加载</button>
+                        <button id="orch-layout-cancel-btn" style="padding:6px 14px;border-radius:6px;border:1px solid #d1d5db;background:white;color:#374151;cursor:pointer;font-size:12px;">${t('orch_modal_cancel')}</button>
+                        <button id="orch-layout-del-btn" style="padding:6px 14px;border-radius:6px;border:1px solid #fca5a5;background:#fef2f2;color:#dc2626;cursor:pointer;font-size:12px;display:none;">${t('orch_modal_delete')}</button>
+                        <button id="orch-layout-confirm-btn" disabled style="padding:6px 14px;border-radius:6px;border:none;background:#2563eb;color:white;cursor:pointer;font-size:12px;opacity:0.5;">${t('orch_modal_load')}</button>
                     </div>
                 </div>
             `;
@@ -5291,13 +5742,13 @@ HTML_TEMPLATE = """
             }
 
             overlay.querySelector('#orch-layout-del-btn').addEventListener('click', async () => {
-                if (!selectedName || !confirm('确定删除布局 "' + selectedName + '"？')) return;
+                if (!selectedName || !confirm(t('orch_confirm_del_layout', {name: selectedName}))) return;
                 try {
                     await fetch('/proxy_visual/delete-layout/' + encodeURIComponent(selectedName), { method: 'DELETE' });
-                    orchToast('已删除: ' + selectedName);
+                    orchToast(t('orch_toast_deleted', {name: selectedName}));
                     overlay.remove();
                     orchLoadLayout();
-                } catch(e) { orchToast('删除失败'); }
+                } catch(e) { orchToast(t('orch_toast_del_fail')); }
             });
 
             overlay.querySelector('#orch-layout-confirm-btn').addEventListener('click', async () => {
@@ -5305,7 +5756,7 @@ HTML_TEMPLATE = """
                 overlay.remove();
                 await orchDoLoadLayout(selectedName);
             });
-        } catch(e) { orchToast('加载失败'); }
+        } catch(e) { orchToast(t('orch_toast_load_fail')); }
     }
 
     async function orchDoLoadLayout(name) {
@@ -5360,28 +5811,28 @@ HTML_TEMPLATE = """
 
             orchRenderEdges();
             orchUpdateYaml();
-            orchToast('已加载: ' + name);
-        } catch(e) { orchToast('加载失败: ' + e.message); }
+            orchToast(t('orch_toast_loaded', {name}));
+        } catch(e) { orchToast(t('orch_toast_load_fail') + ': ' + e.message); }
     }
 
     function orchExportYaml() {
         const yaml = document.getElementById('orch-yaml-content').textContent;
-        if (!yaml || yaml.startsWith('拖入')) { orchToast('请先生成 YAML'); return; }
-        navigator.clipboard.writeText(yaml).then(() => orchToast('YAML 已复制!')).catch(() => {
-            const ta = document.createElement('textarea'); ta.value = yaml; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); orchToast('YAML 已复制!');
+        if (!yaml || yaml.startsWith(t('orch_rule_yaml_hint').substring(0,2))) { orchToast(t('orch_toast_gen_yaml')); return; }
+        navigator.clipboard.writeText(yaml).then(() => orchToast(t('orch_toast_yaml_copied'))).catch(() => {
+            const ta = document.createElement('textarea'); ta.value = yaml; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); orchToast(t('orch_toast_yaml_copied'));
         });
     }
     function orchCopyPrompt() {
         const text = document.getElementById('orch-prompt-content').textContent;
-        navigator.clipboard.writeText(text).catch(() => {}); orchToast('Prompt 已复制');
+        navigator.clipboard.writeText(text).catch(() => {}); orchToast(t('orch_toast_prompt_copied'));
     }
     function orchCopyAgentYaml() {
         const text = document.getElementById('orch-agent-yaml').textContent;
-        navigator.clipboard.writeText(text).catch(() => {}); orchToast('Agent YAML 已复制');
+        navigator.clipboard.writeText(text).catch(() => {}); orchToast(t('orch_toast_agent_yaml_copied'));
     }
 
     function orchUpdateStatus() {
-        document.getElementById('orch-status-bar').textContent = `节点: ${orch.nodes.length} | 连线: ${orch.edges.length} | 分组: ${orch.groups.length}`;
+        document.getElementById('orch-status-bar').textContent = t('orch_status_bar', {nodes: orch.nodes.length, edges: orch.edges.length, groups: orch.groups.length});
     }
 
     function orchToast(msg) {
@@ -5408,7 +5859,7 @@ def manifest():
     manifest_data = {
         "name": "Teamclaw",
         "short_name": "Teamclaw",
-        "description": "Xavier AI Agent - Intelligent Control Assistant",
+        "description": "TeamBot AI Agent - Intelligent Control Assistant",
         "start_url": "/",
         "scope": "/",
         "display": "standalone",
@@ -5831,6 +6282,21 @@ def proxy_sessions_status():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/proxy_openclaw_sessions")
+def proxy_openclaw_sessions():
+    """Proxy to fetch OpenClaw session list from OASIS server."""
+    filter_kw = request.args.get("filter", "")
+    try:
+        r = requests.get(
+            f"{OASIS_BASE_URL}/sessions/openclaw",
+            params={"filter": filter_kw},
+            timeout=10,
+        )
+        return jsonify(r.json()), r.status_code
+    except Exception as e:
+        return jsonify({"error": str(e), "sessions": [], "available": False}), 500
+
+
 @app.route("/proxy_session_history", methods=["POST"])
 def proxy_session_history():
     """代理获取指定会话的历史消息"""
@@ -6206,6 +6672,12 @@ except Exception:
     _vis_extract_yaml = None
     _vis_validate_yaml = None
 
+# Import YAML→Layout converter (used for on-the-fly layout generation from saved YAML)
+try:
+    from mcp_oasis import _yaml_to_layout_data as _vis_yaml_to_layout
+except Exception:
+    _vis_yaml_to_layout = None
+
 
 @app.route("/proxy_visual/experts", methods=["GET"])
 def proxy_visual_experts():
@@ -6362,57 +6834,80 @@ def proxy_visual_agent_generate_yaml():
 
 @app.route("/proxy_visual/save-layout", methods=["POST"])
 def proxy_visual_save_layout():
-    """Save canvas layout JSON for the current user."""
+    """Save canvas layout as YAML (no separate layout JSON stored)."""
     user_id = session.get("user_id")
     if not user_id:
         return jsonify({"error": "Not logged in"}), 401
     data = request.get_json()
     if not data:
         return jsonify({"error": "No data"}), 400
-    save_dir = os.path.join(root_dir, "data", "visual_layouts", user_id)
-    os.makedirs(save_dir, exist_ok=True)
+    if not _vis_layout_to_yaml:
+        return jsonify({"error": "Layout-to-YAML converter unavailable"}), 500
     name = data.get("name", "untitled")
     safe = "".join(c for c in name if c.isalnum() or c in "-_ ").strip() or "untitled"
-    import json as _json
-    with open(os.path.join(save_dir, f"{safe}.json"), "w", encoding="utf-8") as f:
-        _json.dump(data, f, ensure_ascii=False, indent=2)
+    try:
+        yaml_out = _vis_layout_to_yaml(data)
+    except Exception as e:
+        return jsonify({"error": f"YAML conversion failed: {e}"}), 500
+    yaml_dir = os.path.join(root_dir, "data", "user_files", user_id, "oasis", "yaml")
+    os.makedirs(yaml_dir, exist_ok=True)
+    fpath = os.path.join(yaml_dir, f"{safe}.yaml")
+    with open(fpath, "w", encoding="utf-8") as f:
+        f.write(f"# Saved from visual orchestrator\n{yaml_out}")
     return jsonify({"saved": True})
 
 
 @app.route("/proxy_visual/load-layouts", methods=["GET"])
 def proxy_visual_load_layouts():
+    """List saved YAML workflows as available layouts."""
     user_id = session.get("user_id")
     if not user_id:
         return jsonify([])
-    save_dir = os.path.join(root_dir, "data", "visual_layouts", user_id)
-    if not os.path.isdir(save_dir):
+    yaml_dir = os.path.join(root_dir, "data", "user_files", user_id, "oasis", "yaml")
+    if not os.path.isdir(yaml_dir):
         return jsonify([])
-    return jsonify([f[:-5] for f in os.listdir(save_dir) if f.endswith(".json")])
+    return jsonify([f.replace('.yaml', '').replace('.yml', '') for f in sorted(os.listdir(yaml_dir)) if f.endswith((".yaml", ".yml"))])
 
 
 @app.route("/proxy_visual/load-layout/<name>", methods=["GET"])
 def proxy_visual_load_layout(name):
+    """Load a layout by reading the YAML file and converting to layout on-the-fly."""
     user_id = session.get("user_id")
     if not user_id:
         return jsonify({"error": "Not logged in"}), 401
+    if not _vis_yaml_to_layout:
+        return jsonify({"error": "YAML-to-layout converter unavailable"}), 500
     safe = "".join(c for c in name if c.isalnum() or c in "-_ ").strip()
-    path = os.path.join(root_dir, "data", "visual_layouts", user_id, f"{safe}.json")
-    if not os.path.isfile(path):
+    yaml_dir = os.path.join(root_dir, "data", "user_files", user_id, "oasis", "yaml")
+    # Try .yaml then .yml
+    fpath = os.path.join(yaml_dir, f"{safe}.yaml")
+    if not os.path.isfile(fpath):
+        fpath = os.path.join(yaml_dir, f"{safe}.yml")
+    if not os.path.isfile(fpath):
         return jsonify({"error": "Not found"}), 404
-    import json as _json
-    with open(path, "r", encoding="utf-8") as f:
-        return jsonify(_json.load(f))
+    with open(fpath, "r", encoding="utf-8") as f:
+        yaml_content = f.read()
+    try:
+        layout = _vis_yaml_to_layout(yaml_content)
+        layout["name"] = safe
+        return jsonify(layout)
+    except Exception as e:
+        return jsonify({"error": f"YAML-to-layout conversion failed: {e}"}), 500
 
 
 @app.route("/proxy_visual/delete-layout/<name>", methods=["DELETE"])
 def proxy_visual_delete_layout(name):
+    """Delete a saved YAML workflow."""
     user_id = session.get("user_id")
     if not user_id:
         return jsonify({"error": "Not logged in"}), 401
     safe = "".join(c for c in name if c.isalnum() or c in "-_ ").strip()
-    path = os.path.join(root_dir, "data", "visual_layouts", user_id, f"{safe}.json")
-    if os.path.isfile(path):
-        os.remove(path)
+    yaml_dir = os.path.join(root_dir, "data", "user_files", user_id, "oasis", "yaml")
+    fpath = os.path.join(yaml_dir, f"{safe}.yaml")
+    if not os.path.isfile(fpath):
+        fpath = os.path.join(yaml_dir, f"{safe}.yml")
+    if os.path.isfile(fpath):
+        os.remove(fpath)
         return jsonify({"deleted": True})
     return jsonify({"error": "Not found"}), 404
 

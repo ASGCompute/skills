@@ -23,10 +23,10 @@ def send_message(user_id, text):
         print(f"\n[Error]: {e}")
 
 if __name__ == "__main__":
-    print("=== Xavier Agent Python 测试客户端 ===")
+    print("=== TeamBot Agent Python 测试客户端 ===")
     print("(输入 'exit' 退出对话)")
     
-    uid = "Xavier_01"
+    uid = "TeamBot_01"
     
     while True:
         user_input = input("\n[You]: ")
@@ -47,7 +47,7 @@ if __name__ == "__main__":
 #         # --- 1. 定一个 1:00 的闹钟 ---
 #         # print("\n--- 步骤 1: 增加定时任务 ---")
 #         # task_data = {
-#         #     "user_id": "Xavier_01",
+#         #     "user_id": "TeamBot_01",
 #         #     "cron": "0 1 * * *",  # 凌晨 1 点
 #         #     "text": "系统巡检：请分析最近的对话压力。"
 #         # }

@@ -113,7 +113,7 @@ async def lifespan(app: FastAPI):
     print("定时调度中心关闭...")
     scheduler.shutdown()
 
-app = FastAPI(title="Xavier Scheduler", lifespan=lifespan)
+app = FastAPI(title="TeamBot Scheduler", lifespan=lifespan)
 
 @app.post("/tasks", response_model=TaskResponse)
 async def add_task(task: CronTask):

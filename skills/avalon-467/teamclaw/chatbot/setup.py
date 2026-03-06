@@ -225,6 +225,11 @@ def launch_bots():
 
 
 def main():
+    # Headless mode: skip interactive menu to avoid EOFError in background
+    if os.getenv("MINI_TIMEBOT_HEADLESS", "0") == "1":
+        print("=== Chatbot 设置与启动器 (headless 模式，跳过交互) ===")
+        return
+
     print("=== Chatbot 设置与启动器 ===")
 
     # 检查 .env 文件

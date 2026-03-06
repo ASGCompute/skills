@@ -38,13 +38,10 @@ import asyncio
 from functools import wraps
 from aiohttp_socks import ProxyConnector
 from pydub import AudioSegment
-# --- 1. 深度拦截：强制 botpy 内部请求走外部隧道 (解决白名单401) ---
-_original_init = aiohttp.ClientSession.__init__
-@wraps(_original_init)
-def _patched_init(self, *args, **kwargs):
-    kwargs["connector"] = ProxyConnector.from_url(PROXY_URL)
-    _original_init(self, *args, **kwargs)
-aiohttp.ClientSession.__init__ = _patched_init
+# --- 1. 安全的代理配置：只在需要的地方使用代理 (解决白名单401) ---
+def create_proxy_session():
+    """创建使用代理的aiohttp会话，避免全局猴子补丁"""
+    return aiohttp.ClientSession(connector=ProxyConnector.from_url(PROXY_URL))
 
 import botpy
 from botpy.message import C2CMessage, GroupMessage
@@ -55,13 +52,13 @@ class MyClient(botpy.Client):
         核心附件处理：直连下载 + 双缓冲区转码
         """
         try:
-            # 1. 下载阶段：必须直连腾讯服务器，避免代理 403
-            async with httpx.AsyncClient(timeout=15.0) as client:
-                res = await client.get(url)
-                if res.status_code != 200:
-                    print(f"❌ 附件下载失败: {res.status_code}")
-                    return None
-                raw_data = res.content
+            # 1. 下载阶段：使用代理连接腾讯服务器
+            async with create_proxy_session() as session:
+                async with session.get(url, timeout=15.0) as response:
+                    if response.status != 200:
+                        print(f"❌ 附件下载失败: {response.status}")
+                        return None
+                    raw_data = await response.read()
 
             # 如果是图片，直接转 Base64
             if not is_silk:
@@ -112,20 +109,20 @@ class MyClient(botpy.Client):
             if not (isinstance(item.get("input_audio"), dict) and not item["input_audio"].get("data"))
         ]
 
-        async with httpx.AsyncClient(proxy=None, timeout=60.0) as client:
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60.0)) as session:
             try:
-                response = await client.post(
+                async with session.post(
                     AI_CONF["url"],
                     headers={"Authorization": f"Bearer {AI_CONF['api_key']}"},
                     json={
                         "model": AI_CONF["model"],
                         "messages": [{"role": "user", "content": filtered_content}]
                     }
-                )
-                res_data = response.json()
-                if "choices" in res_data:
-                    return res_data["choices"][0]["message"]["content"]
-                return f"❌ AI 接口返回异常: {res_data.get('error', {}).get('message', '未知错误')}"
+                ) as response:
+                    res_data = await response.json()
+                    if "choices" in res_data:
+                        return res_data["choices"][0]["message"]["content"]
+                    return f"❌ AI 接口返回异常: {res_data.get('error', {}).get('message', '未知错误')}"
             except Exception as e:
                 return f"❌ 网络请求失败: {str(e)}"
 

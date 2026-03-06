@@ -3,7 +3,7 @@
 """
 Cloudflare Tunnel 公网部署脚本
 - 自动检测平台（Linux/macOS + amd64/arm64）
-- 自动下载 cloudflared 到 bin/ 目录
+- 提示用户手动安装 cloudflared
 - 启动两条隧道：前端 Web UI + Bark 推送服务
 - 打印各自的公网地址
 """
@@ -11,14 +11,10 @@ Cloudflare Tunnel 公网部署脚本
 import os
 import sys
 import re
-import stat
 import signal
 import platform
 import subprocess
-import urllib.request
-import tarfile
 import shutil
-import tempfile
 import threading
 from dotenv import load_dotenv
 
@@ -66,7 +62,7 @@ def detect_platform():
 
 
 def download_url(os_name, arch):
-    """根据平台返回 cloudflared 下载 URL"""
+    """根据平台返回 cloudflared 下载 URL（仅提供链接，不自动下载）"""
     if os_name == "linux":
         return f"https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-{arch}"
     elif os_name == "darwin":
@@ -74,37 +70,47 @@ def download_url(os_name, arch):
         return "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-amd64.tgz"
 
 
-def download_cloudflared():
-    """下载 cloudflared 并放到 bin/ 目录"""
-    os_name, arch = detect_platform()
+def get_cloudflared_install_guide(os_name, arch):
+    """返回 cloudflared 手动安装指南"""
     url = download_url(os_name, arch)
+    
+    if os_name == "linux":
+        return f"""
+📥 手动安装 cloudflared (Linux {arch}):
 
-    print(f"📥 正在下载 cloudflared ({os_name}/{arch})...")
-    print(f"   来源: {url}")
+1. 下载二进制文件:
+   wget {url} -O cloudflared
 
-    try:
-        if os_name == "darwin":
-            # macOS: 下载 tgz 压缩包并解压
-            tgz_path = os.path.join(BIN_DIR, "cloudflared.tgz")
-            urllib.request.urlretrieve(url, tgz_path)
-            with tarfile.open(tgz_path, "r:gz") as tar:
-                tar.extractall(path=BIN_DIR)
-            os.remove(tgz_path)
-        else:
-            # Linux: 直接下载二进制
-            urllib.request.urlretrieve(url, CLOUDFLARED_PATH)
+2. 添加执行权限:
+   chmod +x cloudflared
 
-        # 添加可执行权限
-        os.chmod(CLOUDFLARED_PATH, os.stat(CLOUDFLARED_PATH).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-        print("✅ cloudflared 下载完成")
+3. 移动到系统路径或项目 bin/ 目录:
+   sudo mv cloudflared /usr/local/bin/  # 系统路径
+   或
+   mv cloudflared {BIN_DIR}/           # 项目路径
+"""
+    elif os_name == "darwin":
+        return f"""
+📥 手动安装 cloudflared (macOS):
 
-    except Exception as e:
-        print(f"❌ 下载失败: {e}")
-        sys.exit(1)
+1. 下载压缩包:
+   curl -L {url} -o cloudflared.tgz
+
+2. 解压:
+   tar -xzf cloudflared.tgz
+
+3. 移动到系统路径或项目 bin/ 目录:
+   sudo mv cloudflared /usr/local/bin/  # 系统路径
+   或
+   mv cloudflared {BIN_DIR}/           # 项目路径
+
+4. 清理压缩包:
+   rm cloudflared.tgz
+"""
 
 
 def ensure_cloudflared():
-    """确保 cloudflared 可用"""
+    """确保 cloudflared 可用，找不到时提示用户手动安装"""
     # 优先检查 bin/ 目录
     if os.path.isfile(CLOUDFLARED_PATH) and os.access(CLOUDFLARED_PATH, os.X_OK):
         print(f"✅ 已找到 cloudflared: {CLOUDFLARED_PATH}")
@@ -116,10 +122,15 @@ def ensure_cloudflared():
         print(f"✅ 已找到系统 cloudflared: {system_cf}")
         return system_cf
 
-    # 都没有，自动下载
-    print("⚠️  未找到 cloudflared，开始自动下载...")
-    download_cloudflared()
-    return CLOUDFLARED_PATH
+    # 都没有，提示用户手动安装
+    os_name, arch = detect_platform()
+    
+    print("❌ 未找到 cloudflared")
+    print("=" * 60)
+    print(get_cloudflared_install_guide(os_name, arch))
+    print("=" * 60)
+    print("\n💡 安装完成后，请重新运行此脚本")
+    sys.exit(1)
 
 
 def cleanup(signum=None, frame=None):
