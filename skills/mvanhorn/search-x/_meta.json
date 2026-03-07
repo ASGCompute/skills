@@ -1,13 +1,18 @@
 {
   "owner": "mvanhorn",
   "slug": "search-x",
-  "displayName": "OpenClaw Search X",
+  "displayName": "Search X",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1770827734163,
-    "commit": "https://github.com/openclaw/skills/commit/9f72fffd6c7c36e28e3879c2676622de38026b38"
+    "version": "1.2.1",
+    "publishedAt": 1772859034676,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1770827734163,
+      "commit": "https://github.com/openclaw/skills/commit/9f72fffd6c7c36e28e3879c2676622de38026b38"
+    },
     {
       "version": "1.0.3",
       "publishedAt": 1770779232557,
