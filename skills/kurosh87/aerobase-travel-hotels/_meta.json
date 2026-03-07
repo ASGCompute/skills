@@ -3,9 +3,15 @@
   "slug": "aerobase-travel-hotels",
   "displayName": "Aerobase Travel Hotels",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1772832562002,
-    "commit": "https://github.com/openclaw/skills/commit/9ce19f9ab79de50b4db6db46352328b6ab11ea12"
+    "version": "1.2.0",
+    "publishedAt": 1772832865241,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1772832562002,
+      "commit": "https://github.com/openclaw/skills/commit/9ce19f9ab79de50b4db6db46352328b6ab11ea12"
+    }
+  ]
 }

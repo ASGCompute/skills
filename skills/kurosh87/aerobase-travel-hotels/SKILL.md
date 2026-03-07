@@ -44,7 +44,11 @@ User: "Just arrived from 12-hour flight - where should I stay?"
 → Factors in next day's schedule
 ```
 
-## API Endpoints
+## API Documentation
+
+Full API docs: https://aerobase.app/developers
+
+OpenAPI spec: https://aerobase.app/api/v1/openapi
 
 **GET /api/v1/hotels**
 
