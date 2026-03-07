@@ -1,0 +1,11 @@
+{
+  "owner": "mailnike",
+  "slug": "healthclaw-vet",
+  "displayName": "HealthClaw-vet - veterinary features: animal patient records, boarding/kennel management, weight-based dosing, and multi-owner linking",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772818064559,
+    "commit": null
+  },
+  "history": []
+}
