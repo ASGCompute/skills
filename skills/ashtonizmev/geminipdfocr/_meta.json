@@ -1,0 +1,11 @@
+{
+  "owner": "ashtonizmev",
+  "slug": "geminipdfocr",
+  "displayName": "PDF OCR Using Gemini LLM",
+  "latest": {
+    "version": "0.1.6",
+    "publishedAt": 1772846732326,
+    "commit": null
+  },
+  "history": []
+}
