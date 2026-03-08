@@ -32,10 +32,14 @@ import { ethers } from "ethers";
 
 const CONTRACTS = {
   core: "0x8241BDD5009ed3F6C99737D2415994B58296Da0d",
-  renderer: "0xE559f88f124AA2354B1570b85f6BE9536B6D60bC",
+  rendererV2: "0xf000dF16982EAc46f1168ea2C9DE820BCbC5287d",
   registry: "0x46fd56417dcd08cA8de1E12dd6e7f7E1b791B3E9",
   wallet: "0x78aF4B6D78a116dEDB3612A30365718B076894b9",
   marketplace: "0x0E760171da676c219F46f289901D0be1CBD06188",
+  board: "0x27a62eD97C9CC0ce71AC20bdb6E002c0ca040213",
+  escrow: "0x2574BD275d5ba939c28654745270C37554387ee5",
+  exoToken: "0xDafB07F4BfB683046e7277E24b225AD421819b07",
+  outlier: "0x8F7403D5809Dd7245dF268ab9D596B3299A84B5C",
 };
 
 const RPC_URL = "https://mainnet.base.org";
@@ -110,36 +114,42 @@ const RENDERER_ABI = [
 ];
 
 const MARKETPLACE_ABI = [
-  // Builder
-  "function registerBuilder(string name, string bio)",
-  "function updateBuilderProfile(string name, string bio)",
-  "function getBuilder(address builderAddr) view returns (string name, string bio, uint256 modulesSubmitted, uint256 totalEarnings, bool registered)",
-  // Module submission
   "function submitModule(bytes32 moduleName, string name, string description, string version, uint256 price) payable",
-  // Activation
-  "function activateModule(uint256 tokenId, bytes32 moduleName) payable",
-  "function deactivateModule(uint256 tokenId, bytes32 moduleName)",
-  // Builder updates
-  "function updateModulePrice(bytes32 moduleName, uint256 newPrice)",
-  "function updateModuleDescription(bytes32 moduleName, string newDescription)",
-  "function updateModuleVersion(bytes32 moduleName, string newVersion)",
-  "function builderDelistModule(bytes32 moduleName)",
-  // Views
-  "function getModule(bytes32 moduleName) view returns (address builder, string name, string description, string version, uint256 price, uint8 status, uint256 submittedAt, uint256 approvedAt, uint256 moduleActivations, uint256 moduleRevenue)",
-  "function isModuleActive(uint256 tokenId, bytes32 moduleName) view returns (bool)",
-  "function getActivation(uint256 tokenId, bytes32 moduleName) view returns (bool active, uint256 activatedAt)",
-  "function getTokenActiveModules(uint256 tokenId) view returns (bytes32[])",
-  "function getBuilderModules(address builderAddr) view returns (bytes32[])",
-  "function getAllModuleNames() view returns (bytes32[])",
-  "function getPendingQueue() view returns (bytes32[])",
+  "function getModule(bytes32 moduleName) view returns (tuple(address builder, string name, string description, string version, uint256 price, uint8 status, uint256 submittedAt, uint256 approvedAt, uint256 totalActivations, uint256 totalRevenue))",
   "function getModuleCount() view returns (uint256)",
-  "function getPendingCount() view returns (uint256)",
-  "function getStats() view returns (uint256 totalModules, uint256 totalApproved, uint256 totalActivations, uint256 totalPlatformRevenue, uint256 pendingCount, uint256 listingFees)",
-  // Constants
-  "function PLATFORM_FEE_BPS() view returns (uint256)",
+  "function totalApproved() view returns (uint256)",
   "function LISTING_FEE() view returns (uint256)",
-  "function MAX_PRICE() view returns (uint256)",
-  "function platformTreasury() view returns (address)",
+];
+
+const BOARD_ABI = [
+  "function postListing(uint8 category, bytes32[] skills, uint256 price, uint8 priceType, address paymentToken, uint256 deadline, string contact, uint256 exoTokenId, string metadata) returns (uint256)",
+  "function updateListing(uint256 listingId, bytes32[] skills, uint256 price, uint8 priceType, address paymentToken, uint256 deadline, string contact, string metadata)",
+  "function removeListing(uint256 listingId)",
+  "function featureListing(uint256 listingId, uint256 amount)",
+  "function getListing(uint256 listingId) view returns (tuple(address poster, uint8 category, bytes32[] skills, uint256 price, uint8 priceType, address paymentToken, uint256 deadline, string contact, uint256 exoTokenId, string metadata, uint256 createdAt, uint256 featuredUntil, bool active))",
+  "function getListingCount() view returns (uint256)",
+  "function isVerified(address user) view returns (bool)",
+  "function isActive(uint256 listingId) view returns (bool)",
+];
+
+const ESCROW_ABI = [
+  "function createEscrow(uint256 listingId, address worker) payable returns (uint256)",
+  "function createEscrowERC20(uint256 listingId, address worker, address token, uint256 amount) returns (uint256)",
+  "function acceptEscrow(uint256 escrowId)",
+  "function submitDeliverable(uint256 escrowId, bytes deliverable)",
+  "function confirmDelivery(uint256 escrowId)",
+  "function disputeDelivery(uint256 escrowId)",
+  "function resolveDispute(uint256 escrowId, bool toWorker)",
+  "function cancelEscrow(uint256 escrowId)",
+  "function claimTimeout(uint256 escrowId)",
+  "function tip(address recipient) payable",
+  "function getEscrow(uint256 escrowId) view returns (tuple(uint256 listingId, address buyer, address worker, address paymentToken, uint256 amount, uint8 status, uint256 createdAt, uint256 deliveredAt, bytes deliverable))",
+  "function getEscrowCount() view returns (uint256)",
+  "function jobsCompleted(address) view returns (uint256)",
+  "function jobsHired(address) view returns (uint256)",
+  "function ESCROW_FEE_BPS() view returns (uint256)",
+  "function CANCEL_FEE_BPS() view returns (uint256)",
+  "function TIMEOUT_DURATION() view returns (uint256)",
 ];
 
 // --- ABI Coder ---
@@ -151,6 +161,8 @@ const iface = {
   wallet: new ethers.Interface(WALLET_ABI),
   renderer: new ethers.Interface(RENDERER_ABI),
   marketplace: new ethers.Interface(MARKETPLACE_ABI),
+  board: new ethers.Interface(BOARD_ABI),
+  escrow: new ethers.Interface(ESCROW_ABI),
 };
 
 // --- Visual Config Constants ---
@@ -158,6 +170,10 @@ const iface = {
 export const SHAPES = ["hexagon", "circle", "diamond", "shield", "octagon", "triangle"];
 export const SYMBOLS = ["none", "eye", "gear", "bolt", "star", "wave", "node", "diamond"];
 export const PATTERNS = ["none", "grid", "dots", "lines", "circuits", "rings"];
+
+export const BOARD_CATEGORIES = ["Service Offered", "Service Wanted", "For Sale", "Collaboration", "Bounty"];
+export const PRICE_TYPES = ["Fixed", "Negotiable", "Tips Only", "Free"];
+export const ESCROW_STATUS = ["Created", "Accepted", "Delivered", "Confirmed", "Disputed", "Resolved", "Cancelled"];
 
 // --- Exoskeleton Class ---
 
@@ -444,7 +460,7 @@ export class Exoskeleton {
 
   async renderSVG(tokenId) {
     const data = iface.renderer.encodeFunctionData("renderSVG", [tokenId]);
-    const result = await this.rpcCall(this.contracts.renderer, data);
+    const result = await this.rpcCall(this.contracts.rendererV2, data);
     const decoded = iface.renderer.decodeFunctionResult("renderSVG", result);
     return decoded[0];
   }
@@ -588,97 +604,216 @@ export class Exoskeleton {
   //  READ — MARKETPLACE
   // ═══════════════════════════════════════════════════════════════
 
-  async getMarketplaceModule(moduleName) {
-    const data = iface.marketplace.encodeFunctionData("getModule", [moduleName]);
+  async getModule(moduleName) {
+    const key = typeof moduleName === "string" && !moduleName.startsWith("0x")
+      ? ethers.keccak256(ethers.toUtf8Bytes(moduleName))
+      : moduleName;
+    const data = iface.marketplace.encodeFunctionData("getModule", [key]);
     const result = await this.rpcCall(this.contracts.marketplace, data);
-    const d = iface.marketplace.decodeFunctionResult("getModule", result);
-    const STATUS_NAMES = ["NONE", "PENDING", "APPROVED", "REJECTED", "DELISTED"];
+    const decoded = iface.marketplace.decodeFunctionResult("getModule", result);
+    const m = decoded[0];
     return {
-      builder: d.builder, name: d.name, description: d.description,
-      version: d.version, price: d.price, status: STATUS_NAMES[Number(d.status)] || "UNKNOWN",
-      statusCode: d.status, submittedAt: d.submittedAt, approvedAt: d.approvedAt,
-      totalActivations: d.moduleActivations, totalRevenue: d.moduleRevenue,
+      builder: m.builder, name: m.name, description: m.description,
+      version: m.version, price: m.price, status: Number(m.status),
+      submittedAt: m.submittedAt, approvedAt: m.approvedAt,
+      totalActivations: m.totalActivations, totalRevenue: m.totalRevenue,
     };
   }
 
-  async getMarketplaceBuilder(builderAddr) {
-    const data = iface.marketplace.encodeFunctionData("getBuilder", [builderAddr]);
-    const result = await this.rpcCall(this.contracts.marketplace, data);
-    const d = iface.marketplace.decodeFunctionResult("getBuilder", result);
-    return { name: d.name, bio: d.bio, modulesSubmitted: d.modulesSubmitted, totalEarnings: d.totalEarnings, registered: d.registered };
-  }
-
-  async isMarketplaceModuleActive(tokenId, moduleName) {
-    const data = iface.marketplace.encodeFunctionData("isModuleActive", [tokenId, moduleName]);
-    const result = await this.rpcCall(this.contracts.marketplace, data);
-    return iface.marketplace.decodeFunctionResult("isModuleActive", result)[0];
-  }
-
-  async getMarketplaceActiveModules(tokenId) {
-    const data = iface.marketplace.encodeFunctionData("getTokenActiveModules", [tokenId]);
-    const result = await this.rpcCall(this.contracts.marketplace, data);
-    return iface.marketplace.decodeFunctionResult("getTokenActiveModules", result)[0];
-  }
-
-  async getMarketplaceStats() {
-    const data = iface.marketplace.encodeFunctionData("getStats", []);
-    const result = await this.rpcCall(this.contracts.marketplace, data);
-    const d = iface.marketplace.decodeFunctionResult("getStats", result);
-    return {
-      totalModules: d.totalModules, totalApproved: d.totalApproved,
-      totalActivations: d.totalActivations, totalPlatformRevenue: d.totalPlatformRevenue,
-      pendingCount: d.pendingCount, listingFees: d.listingFees,
-    };
-  }
-
-  async getMarketplaceModuleCount() {
+  async getModuleCount() {
     const data = iface.marketplace.encodeFunctionData("getModuleCount", []);
     const result = await this.rpcCall(this.contracts.marketplace, data);
     return iface.marketplace.decodeFunctionResult("getModuleCount", result)[0];
   }
 
+  async getMarketplaceListingFee() {
+    const data = iface.marketplace.encodeFunctionData("LISTING_FEE", []);
+    const result = await this.rpcCall(this.contracts.marketplace, data);
+    return iface.marketplace.decodeFunctionResult("LISTING_FEE", result)[0];
+  }
+
   // ═══════════════════════════════════════════════════════════════
-  //  WRITE — MARKETPLACE (returns Bankr tx JSON)
+  //  WRITE — MARKETPLACE
   // ═══════════════════════════════════════════════════════════════
 
-  buildRegisterBuilder(name, bio) {
-    const data = iface.marketplace.encodeFunctionData("registerBuilder", [name, bio]);
-    return this._buildTx(this.contracts.marketplace, data);
+  buildSubmitModule(moduleName, name, description, version, price, listingFee = "0") {
+    const key = typeof moduleName === "string" && !moduleName.startsWith("0x")
+      ? ethers.keccak256(ethers.toUtf8Bytes(moduleName))
+      : moduleName;
+    const data = iface.marketplace.encodeFunctionData("submitModule", [key, name, description, version, price]);
+    return this._buildTx(this.contracts.marketplace, data, listingFee.toString());
   }
 
-  buildSubmitModule(moduleName, name, description, version, price) {
-    const data = iface.marketplace.encodeFunctionData("submitModule", [moduleName, name, description, version, price]);
-    return this._buildTx(this.contracts.marketplace, data, "1000000000000000"); // 0.001 ETH listing fee
+  // ═══════════════════════════════════════════════════════════════
+  //  READ — THE BOARD (Listings)
+  // ═══════════════════════════════════════════════════════════════
+
+  async getListingCount() {
+    const data = iface.board.encodeFunctionData("getListingCount", []);
+    const result = await this.rpcCall(this.contracts.board, data);
+    return iface.board.decodeFunctionResult("getListingCount", result)[0];
   }
 
-  buildActivateMarketplaceModule(tokenId, moduleName, ethValue = "0") {
-    const data = iface.marketplace.encodeFunctionData("activateModule", [tokenId, moduleName]);
-    return this._buildTx(this.contracts.marketplace, data, ethValue.toString());
+  async getListing(listingId) {
+    const data = iface.board.encodeFunctionData("getListing", [listingId]);
+    const result = await this.rpcCall(this.contracts.board, data);
+    const l = iface.board.decodeFunctionResult("getListing", result)[0];
+    return {
+      poster: l.poster, category: Number(l.category), skills: l.skills,
+      price: l.price, priceType: Number(l.priceType), paymentToken: l.paymentToken,
+      deadline: l.deadline, contact: l.contact, exoTokenId: l.exoTokenId,
+      metadata: l.metadata, createdAt: l.createdAt, featuredUntil: l.featuredUntil,
+      active: l.active,
+    };
   }
 
-  buildDeactivateMarketplaceModule(tokenId, moduleName) {
-    const data = iface.marketplace.encodeFunctionData("deactivateModule", [tokenId, moduleName]);
-    return this._buildTx(this.contracts.marketplace, data);
+  async isVerifiedOnBoard(address) {
+    const data = iface.board.encodeFunctionData("isVerified", [address]);
+    const result = await this.rpcCall(this.contracts.board, data);
+    return iface.board.decodeFunctionResult("isVerified", result)[0];
   }
 
-  buildUpdateModulePrice(moduleName, newPrice) {
-    const data = iface.marketplace.encodeFunctionData("updateModulePrice", [moduleName, newPrice]);
-    return this._buildTx(this.contracts.marketplace, data);
+  async isListingActive(listingId) {
+    const data = iface.board.encodeFunctionData("isActive", [listingId]);
+    const result = await this.rpcCall(this.contracts.board, data);
+    return iface.board.decodeFunctionResult("isActive", result)[0];
   }
 
-  buildUpdateModuleDescription(moduleName, newDescription) {
-    const data = iface.marketplace.encodeFunctionData("updateModuleDescription", [moduleName, newDescription]);
-    return this._buildTx(this.contracts.marketplace, data);
+  // ═══════════════════════════════════════════════════════════════
+  //  WRITE — THE BOARD (Listings)
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * Post a listing to The Board.
+   * @param {number} category 0=ServiceOffered, 1=ServiceWanted, 2=ForSale, 3=Collaboration, 4=Bounty
+   * @param {string[]} skillTags Array of skill strings (hashed to bytes32)
+   * @param {string} price Price in wei
+   * @param {number} priceType 0=Fixed, 1=Negotiable, 2=TipsOnly, 3=Free
+   * @param {string} contact Contact info (XMTP, Farcaster, wallet)
+   * @param {string} metadata Description or IPFS URI
+   * @param {Object} opts Optional: { paymentToken, deadline, exoTokenId }
+   */
+  buildPostListing(category, skillTags, price, priceType, contact, metadata, opts = {}) {
+    const skills = skillTags.map(s => ethers.keccak256(ethers.toUtf8Bytes(s.toLowerCase())));
+    const data = iface.board.encodeFunctionData("postListing", [
+      category, skills, price, priceType,
+      opts.paymentToken || ethers.ZeroAddress,
+      opts.deadline || 0,
+      contact,
+      opts.exoTokenId || 0,
+      metadata,
+    ]);
+    return this._buildTx(this.contracts.board, data);
   }
 
-  buildUpdateModuleVersion(moduleName, newVersion) {
-    const data = iface.marketplace.encodeFunctionData("updateModuleVersion", [moduleName, newVersion]);
-    return this._buildTx(this.contracts.marketplace, data);
+  buildUpdateListing(listingId, skillTags, price, priceType, contact, metadata, opts = {}) {
+    const skills = skillTags.map(s => ethers.keccak256(ethers.toUtf8Bytes(s.toLowerCase())));
+    const data = iface.board.encodeFunctionData("updateListing", [
+      listingId, skills, price, priceType,
+      opts.paymentToken || ethers.ZeroAddress,
+      opts.deadline || 0,
+      contact, metadata,
+    ]);
+    return this._buildTx(this.contracts.board, data);
   }
 
-  buildBuilderDelistModule(moduleName) {
-    const data = iface.marketplace.encodeFunctionData("builderDelistModule", [moduleName]);
-    return this._buildTx(this.contracts.marketplace, data);
+  buildRemoveListing(listingId) {
+    const data = iface.board.encodeFunctionData("removeListing", [listingId]);
+    return this._buildTx(this.contracts.board, data);
+  }
+
+  buildFeatureListing(listingId, exoTokenAmount) {
+    const data = iface.board.encodeFunctionData("featureListing", [listingId, exoTokenAmount]);
+    return this._buildTx(this.contracts.board, data);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  READ — BOARD ESCROW
+  // ═══════════════════════════════════════════════════════════════
+
+  async getEscrowCount() {
+    const data = iface.escrow.encodeFunctionData("getEscrowCount", []);
+    const result = await this.rpcCall(this.contracts.escrow, data);
+    return iface.escrow.decodeFunctionResult("getEscrowCount", result)[0];
+  }
+
+  async getEscrow(escrowId) {
+    const data = iface.escrow.encodeFunctionData("getEscrow", [escrowId]);
+    const result = await this.rpcCall(this.contracts.escrow, data);
+    const e = iface.escrow.decodeFunctionResult("getEscrow", result)[0];
+    return {
+      listingId: e.listingId, buyer: e.buyer, worker: e.worker,
+      paymentToken: e.paymentToken, amount: e.amount,
+      status: Number(e.status), createdAt: e.createdAt,
+      deliveredAt: e.deliveredAt, deliverable: e.deliverable,
+    };
+  }
+
+  async getJobsCompleted(address) {
+    const data = iface.escrow.encodeFunctionData("jobsCompleted", [address]);
+    const result = await this.rpcCall(this.contracts.escrow, data);
+    return iface.escrow.decodeFunctionResult("jobsCompleted", result)[0];
+  }
+
+  async getJobsHired(address) {
+    const data = iface.escrow.encodeFunctionData("jobsHired", [address]);
+    const result = await this.rpcCall(this.contracts.escrow, data);
+    return iface.escrow.decodeFunctionResult("jobsHired", result)[0];
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  WRITE — BOARD ESCROW
+  // ═══════════════════════════════════════════════════════════════
+
+  /** Create an ETH escrow for a listing. ethValue in wei. */
+  buildCreateEscrow(listingId, workerAddress, ethValue) {
+    const data = iface.escrow.encodeFunctionData("createEscrow", [listingId, workerAddress]);
+    return this._buildTx(this.contracts.escrow, data, ethValue.toString());
+  }
+
+  /** Create an ERC20 escrow (must approve token first). */
+  buildCreateEscrowERC20(listingId, workerAddress, tokenAddress, amount) {
+    const data = iface.escrow.encodeFunctionData("createEscrowERC20", [
+      listingId, workerAddress, tokenAddress, amount,
+    ]);
+    return this._buildTx(this.contracts.escrow, data);
+  }
+
+  buildAcceptEscrow(escrowId) {
+    const data = iface.escrow.encodeFunctionData("acceptEscrow", [escrowId]);
+    return this._buildTx(this.contracts.escrow, data);
+  }
+
+  buildSubmitDeliverable(escrowId, deliverable) {
+    const payload = typeof deliverable === "string" ? ethers.toUtf8Bytes(deliverable) : deliverable;
+    const data = iface.escrow.encodeFunctionData("submitDeliverable", [escrowId, payload]);
+    return this._buildTx(this.contracts.escrow, data);
+  }
+
+  buildConfirmDelivery(escrowId) {
+    const data = iface.escrow.encodeFunctionData("confirmDelivery", [escrowId]);
+    return this._buildTx(this.contracts.escrow, data);
+  }
+
+  buildDisputeDelivery(escrowId) {
+    const data = iface.escrow.encodeFunctionData("disputeDelivery", [escrowId]);
+    return this._buildTx(this.contracts.escrow, data);
+  }
+
+  buildCancelEscrow(escrowId) {
+    const data = iface.escrow.encodeFunctionData("cancelEscrow", [escrowId]);
+    return this._buildTx(this.contracts.escrow, data);
+  }
+
+  buildClaimTimeout(escrowId) {
+    const data = iface.escrow.encodeFunctionData("claimTimeout", [escrowId]);
+    return this._buildTx(this.contracts.escrow, data);
+  }
+
+  /** Send a tip (100% to recipient, no fee). ethValue in wei. */
+  buildTip(recipientAddress, ethValue) {
+    const data = iface.escrow.encodeFunctionData("tip", [recipientAddress]);
+    return this._buildTx(this.contracts.escrow, data, ethValue.toString());
   }
 
   // ═══════════════════════════════════════════════════════════════
