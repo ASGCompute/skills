@@ -86,3 +86,25 @@ Requires `ASRAI_PRIVATE_KEY` set in `~/.env` or environment. Payment is signed a
 ## Cost
 
 $0.005 USDC per call (most tools), $0.01 for `ask_ai`, FREE for `indicator_guide`. Signed from the user's own wallet on Base mainnet. Tell the user if they ask.
+
+## Install
+
+```bash
+npx -y -p asrai-mcp install-skill
+```
+
+Auto-detects OpenClaw, Cursor, Cline, and other agents. Then set your key:
+
+```
+ASRAI_PRIVATE_KEY=0x<your_private_key>  # add to ~/.env
+```
+
+For MCP agents (Cursor, Cline, Claude Desktop) also add to config:
+
+```json
+{
+  "mcpServers": {
+    "asrai": { "command": "npx", "args": ["-y", "asrai-mcp"] }
+  }
+}
+```
