@@ -9,6 +9,9 @@ Converts Telegram chat exports into a long screenshot-style image with iOS-style
 
 ## Changelog
 
+### v1.2.0 (2026-03-07)
+- **建议**: 长图发送优化 — 对于较长对话，建议打包为 ZIP 文件发送，避免 Telegram 图片压缩导致模糊
+
 ### v1.1.0 (2026-03-01)
 - **修复**: 中文长文本换行问题 — 现在逐字符检查宽度，正确换行
 - **修复**: 发件人显示问题 — 正确区分"我"(蓝色气泡)和其他人(灰色气泡+头像)
@@ -66,6 +69,20 @@ Generates a PNG image with:
 - Reply threads are not visually indicated
 - Only plain text messages are fully supported
 - Large exports may create very tall images
+
+## Best Practices
+
+### Handling Long Conversations
+
+For long conversations that result in tall images (>2000px), consider:
+
+1. **ZIP Packaging**: Pack the PNG into a ZIP file before sending to avoid Telegram's image compression
+   ```bash
+   zip chat.zip chat.png
+   ```
+   Then send the ZIP file as a document instead of an image.
+
+2. **Message Limits**: Use `--limit` to generate partial exports if the full conversation is too long
 
 ## Customization
 
