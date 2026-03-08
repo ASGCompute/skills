@@ -1,13 +1,18 @@
 {
   "owner": "p0lish",
   "slug": "web-recon",
-  "displayName": "Web Recon",
+  "displayName": "web-recon",
   "latest": {
-    "version": "1.2.0",
-    "publishedAt": 1772732516271,
-    "commit": "https://github.com/openclaw/skills/commit/688f746e6774b6210a6960b67e86ec8b8eb49573"
+    "version": "0.1.0",
+    "publishedAt": 1772985878776,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.2.0",
+      "publishedAt": 1772732516271,
+      "commit": "https://github.com/openclaw/skills/commit/688f746e6774b6210a6960b67e86ec8b8eb49573"
+    },
     {
       "version": "1.1.0",
       "publishedAt": 1772660455899,
