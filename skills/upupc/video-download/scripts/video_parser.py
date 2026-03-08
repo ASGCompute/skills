@@ -1,9 +1,38 @@
 import sys
 import os
+import glob
 import yt_dlp
 from faster_whisper import WhisperModel
 import json
 import tqdm
+
+COMMON_SUBTITLE_EXTENSIONS = (
+    "srt",
+    "vtt",
+    "ass",
+    "ssa",
+    "lrc",
+    "sub",
+    "sbv",
+    "ttml",
+    "dfxp",
+    "json",
+    "txt",
+)
+
+
+def find_existing_subtitles(video_folder: str, audio_filename: str) -> list:
+    """查找已存在的字幕文件，支持 video.ext 和 video.<lang>.ext 格式"""
+    subtitle_candidates = glob.glob(os.path.join(video_folder, f"{audio_filename}.*"))
+    existing_subtitles = []
+    for candidate in subtitle_candidates:
+        basename = os.path.basename(candidate)
+        if not basename.startswith(f"{audio_filename}."):
+            continue
+        suffix_parts = basename[len(audio_filename) + 1:].split(".")
+        if suffix_parts and suffix_parts[-1].lower() in COMMON_SUBTITLE_EXTENSIONS:
+            existing_subtitles.append(candidate)
+    return sorted(existing_subtitles)
 
 
 def extract_audio(video_path: str) -> str:
@@ -116,6 +145,158 @@ def format_vtt_time(seconds: float) -> str:
     return f"{hours:02d}:{minutes:02d}:{secs:02d}.{millis:03d}"
 
 
+def choose_subtitle_language_and_format(subtitle_map: dict) -> tuple:
+    """从字幕信息中选择语言与格式：英文优先，其次中文；格式优先txt。"""
+    if not subtitle_map:
+        return None, None
+
+    normalized = {}
+    for lang, tracks in subtitle_map.items():
+        if not tracks:
+            continue
+        exts = []
+        for track in tracks:
+            ext = (track.get("ext") or "").lower()
+            if ext:
+                exts.append(ext)
+        if exts:
+            normalized[lang] = exts
+
+    if not normalized:
+        return None, None
+
+    def pick_format(exts: list) -> str:
+        if "txt" in exts:
+            return "txt"
+        if "srt" in exts:
+            return "srt"
+        if "vtt" in exts:
+            return "vtt"
+        return exts[0]
+
+    english_candidates = {"en", "en-us", "en-gb", "english"}
+    chinese_candidates = {"zh", "zh-cn", "zh-hans", "zh-hant", "zh-tw", "chinese"}
+
+    def normalize_lang(lang: str) -> str:
+        return lang.lower().replace("_", "-")
+
+    for lang in normalized:
+        lang_norm = normalize_lang(lang)
+        if lang_norm in english_candidates or lang_norm.startswith("en-"):
+            return lang, pick_format(normalized[lang])
+
+    for lang in normalized:
+        lang_norm = normalize_lang(lang)
+        if lang_norm in chinese_candidates or lang_norm.startswith("zh-"):
+            return lang, pick_format(normalized[lang])
+
+    fallback_lang = next(iter(normalized.keys()))
+    return fallback_lang, pick_format(normalized[fallback_lang])
+
+
+def download_subtitle(json_input: str) -> dict:
+    """仅下载字幕：onlysubtitle=true 时使用。"""
+    try:
+        params = json.loads(json_input)
+    except json.JSONDecodeError as e:
+        return {"success": False, "message": f"JSON解析失败: {str(e)}", "results": []}
+
+    urls = params.get("urls", [])
+    output_path = params.get("output", "./downloads")
+    onlysubtitle = params.get("onlysubtitle", False)
+    cookie = params.get("cookie", "")
+    cookiesfrombrowser = params.get("cookiesfrombrowser", "")
+    cookiefile = params.get("cookiefile", "")
+
+    if not urls:
+        return {"success": False, "message": "URL列表为空", "results": []}
+    if not onlysubtitle:
+        return {"success": False, "message": "onlysubtitle=false，不执行仅字幕下载逻辑", "results": []}
+
+    os.makedirs(output_path, exist_ok=True)
+
+    results = []
+    success_count = 0
+
+    base_opts = {"format": "bestvideo+bestaudio/best"}
+    if cookie:
+        base_opts["http_headers"] = {"Cookie": cookie}
+    if cookiesfrombrowser:
+        base_opts["cookiesfrombrowser"] = (cookiesfrombrowser,)
+    if cookiefile:
+        base_opts["cookiefile"] = cookiefile
+
+    for idx, url in enumerate(urls, 1):
+        try:
+            with yt_dlp.YoutubeDL(base_opts) as ydl_probe:
+                info = ydl_probe.extract_info(url, download=False)
+
+            video_title = info.get("title", f"video_{idx}")
+            safe_title = "".join(c for c in video_title if c.isalnum() or c in (" ", "-", "_")).strip() or f"video_{idx}"
+            video_folder = os.path.join(output_path, safe_title)
+            os.makedirs(video_folder, exist_ok=True)
+
+            subtitle_map = {}
+            subtitle_map.update(info.get("subtitles") or {})
+            subtitle_map.update(info.get("automatic_captions") or {})
+            selected_lang, selected_format = choose_subtitle_language_and_format(subtitle_map)
+
+            if not selected_lang or not selected_format:
+                results.append({
+                    "url": url,
+                    "success": False,
+                    "subtitle_path": None,
+                    "error": "未找到可用字幕"
+                })
+                continue
+
+            download_opts = dict(base_opts)
+            download_opts.update({
+                "outtmpl": f"{video_folder}/%(title)s.%(ext)s",
+                "skip_download": True,
+                "writesubtitles": True,
+                "writeautomaticsub": True,
+                "subtitleslangs": [selected_lang],
+                "subtitlesformat": selected_format
+            })
+
+            with yt_dlp.YoutubeDL(download_opts) as ydl_download:
+                ydl_download.download([url])
+                video_path = ydl_download.prepare_filename(info)
+
+            subtitle_base = os.path.splitext(os.path.basename(video_path))[0]
+            subtitle_files = find_existing_subtitles(video_folder, subtitle_base)
+            if subtitle_files:
+                success_count += 1
+                results.append({
+                    "url": url,
+                    "success": True,
+                    "subtitle_path": subtitle_files[0],
+                    "error": None
+                })
+            else:
+                results.append({
+                    "url": url,
+                    "success": False,
+                    "subtitle_path": None,
+                    "error": "字幕下载执行完成，但未找到字幕文件"
+                })
+        except Exception as e:
+            results.append({
+                "url": url,
+                "success": False,
+                "subtitle_path": None,
+                "error": str(e)
+            })
+
+    overall_success = success_count > 0
+    return {
+        "success": overall_success,
+        "message": f"仅字幕下载完成：成功 {success_count}/{len(urls)}",
+        "results": results
+    }
+
+
 def download_videos(json_input: str) -> dict:
     """
     下载视频并转录
@@ -129,6 +310,9 @@ def download_videos(json_input: str) -> dict:
             - subtitle_format: 字幕格式，支持: txt, srt, vtt, json (默认: "txt")
             - download_subtitle: 是否下载视频自带字幕 (默认: False)
             - overwrite_subtitle: 是否覆盖已存在的字幕文件 (默认: True)
+            - cookie: 可选，下载请求使用的 Cookie 字符串 (默认: "")
+            - cookiesfrombrowser: 可选，从浏览器读取 cookies (默认: "")
+            - cookiefile: 可选，Netscape 格式 cookie 文件路径 (默认: "")
 
     Returns:
         结果字典
@@ -145,6 +329,9 @@ def download_videos(json_input: str) -> dict:
     subtitle_format = params.get("subtitle_format", "txt")  # 字幕格式
     download_subtitle = params.get("download_subtitle", False)  # 是否下载视频自带字幕
     overwrite_subtitle = params.get("overwrite_subtitle", True)  # 是否覆盖已存在的字幕文件
+    cookie = params.get("cookie", "")  # 下载请求 Cookie
+    cookiesfrombrowser = params.get("cookiesfrombrowser", "")  # 从浏览器读取 cookies
+    cookiefile = params.get("cookiefile", "")  # cookie 文件路径
 
     if not urls:
         return {"success": False, "message": "URL列表为空", "downloaded": [], "transcripts": []}
@@ -159,7 +346,28 @@ def download_videos(json_input: str) -> dict:
     print("开始下载视频...")
     print("=" * 50)
 
-    with yt_dlp.YoutubeDL({}) as ydl:
+    ydl_opts = {
+        'format': 'bestvideo+bestaudio/best',
+    }
+
+    if cookie:
+        ydl_opts['http_headers'] = {
+            'Cookie': cookie
+        }
+    if cookiesfrombrowser:
+        ydl_opts['cookiesfrombrowser'] = (cookiesfrombrowser,)
+    if cookiefile:
+        ydl_opts['cookiefile'] = cookiefile
+
+    language = 'en'
+    # 如果需要下载视频自带的字幕
+    if download_subtitle:
+        ydl_opts['writesubtitles'] = True
+        ydl_opts['writeautomaticsub'] = True
+        ydl_opts['subtitleslangs'] = [language]
+        ydl_opts['subtitlesformat'] = subtitle_format
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         for idx, url in enumerate(urls):
             try:
                 # 先获取视频信息，确定文件夹名称
@@ -185,17 +393,8 @@ def download_videos(json_input: str) -> dict:
                     continue
 
                 # 下载视频到对应文件夹
-                ydl_opts = {
-                    'outtmpl': f'{video_folder}/%(title)s.%(ext)s',
-                    'format': 'bestvideo+bestaudio/best',
-                    'progress_hooks': [lambda d, t=video_title: print_progress(d, t)],
-                }
-
-                # 如果需要下载视频自带的字幕
-                if download_subtitle:
-                    ydl_opts['writesubtitles'] = True
-                    ydl_opts['subtitleslangs'] = ['zh-Hans', 'zh-CN', 'zh-TW', 'en', 'ja', 'all']
-                    ydl_opts['subtitlesformat'] = subtitle_format
+                ydl_opts['outtmpl'] = f'{video_folder}/%(title)s.%(ext)s'
+                ydl_opts['progress_hooks'] = [lambda d, t=video_title: print_progress(d, t)]
 
                 def print_progress(d, title):
                     if d['status'] == 'downloading':
@@ -265,46 +464,74 @@ def download_videos(json_input: str) -> dict:
             "transcripts": []
         }
 
+    if not video_list:
+        return {
+            "success": False,
+            "message": "未下载到任何视频，程序退出",
+            "downloaded": downloaded,
+            "transcripts": []
+        }
+
+    transcripts = []
+    pending_video_list = []
+    if not overwrite_subtitle:
+        for idx, video_info in enumerate(video_list):
+            video_title = video_info["title"]
+            url = video_info["url"]
+            video_path = video_info["video_path"]
+            video_folder = video_info["video_folder"]
+            audio_filename = os.path.splitext(os.path.basename(video_path))[0]
+            existing_subtitles = find_existing_subtitles(video_folder, audio_filename)
+            if existing_subtitles:
+                subtitle_preview = ", ".join(os.path.basename(path) for path in existing_subtitles)
+                print(f"\n[{idx + 1}/{len(video_list)}] 检测到已存在字幕文件，跳过转录: {video_title}")
+                print(f"[{idx + 1}/{len(video_list)}] 已存在字幕: {subtitle_preview}")
+                transcripts.append({
+                    "title": video_title,
+                    "url": url,
+                    "transcript": existing_subtitles[0],
+                    "format": subtitle_format
+                })
+            else:
+                pending_video_list.append(video_info)
+    else:
+        pending_video_list = video_list
+
+    if not pending_video_list:
+        print("\n无需转录：所有视频均已存在字幕文件")
+        return {
+            "success": True,
+            "message": f"成功下载 {len(downloaded)} 个视频，跳过 {len(transcripts)} 个转录（字幕已存在）",
+            "downloaded": downloaded,
+            "transcripts": transcripts
+        }
+
     print("\n" + "=" * 50)
-    print(f"视频下载完成，开始转录 {len(video_list)} 个视频...")
+    print(f"视频下载完成，开始转录 {len(pending_video_list)} 个视频...")
     print("=" * 50)
 
     # 使用 Faster Whisper 加载模型
     # device: "auto" 自动选择 CUDA 或 CPU
     # compute_type: "auto" 自动选择最佳精度 (float16 for CUDA, int8 for CPU)
     model = WhisperModel(model_name, device="auto", compute_type="auto")
-    transcripts = []
-    for idx, video_info in enumerate(video_list):
+    for idx, video_info in enumerate(pending_video_list):
         video_title = video_info["title"]
         url = video_info["url"]
         video_path = video_info["video_path"]
         video_folder = video_info["video_folder"]
 
-        # 检查字幕文件是否已存在
-        audio_filename = os.path.splitext(os.path.basename(video_path))[0]
-        subtitle_path = os.path.join(video_folder, f"{audio_filename}.{subtitle_format.lower()}")
-        if os.path.exists(subtitle_path) and not overwrite_subtitle:
-            print(f"\n[{idx + 1}/{len(video_list)}] 字幕文件已存在，跳过转录: {video_title}")
-            transcripts.append({
-                "title": video_title,
-                "url": url,
-                "transcript": subtitle_path,
-                "format": subtitle_format
-            })
-            continue
-
-        print(f"\n[{idx + 1}/{len(video_list)}] 正在提取音频: {video_title}")
+        print(f"\n[{idx + 1}/{len(pending_video_list)}] 正在提取音频: {video_title}")
         try:
             audio_path = extract_audio(video_path)
-            print(f"[{idx + 1}/{len(video_list)}] 正在转录: {video_title}")
+            print(f"[{idx + 1}/{len(pending_video_list)}] 正在转录: {video_title}")
 
             transcript = transcribe_audio(audio_path, model)
             print()  # 换行
 
             # 保存字幕文件
-            print(f"[{idx + 1}/{len(video_list)}] 正在保存字幕文件...")
+            print(f"[{idx + 1}/{len(pending_video_list)}] 正在保存字幕文件...")
             transcript_filename = save_subtitle(audio_path, transcript, video_folder, subtitle_format)
-            print(f"[{idx + 1}/{len(video_list)}] 字幕文件已保存")
+            print(f"[{idx + 1}/{len(pending_video_list)}] 字幕文件已保存")
 
             transcripts.append({
                 "title": video_title,
@@ -312,7 +539,7 @@ def download_videos(json_input: str) -> dict:
                 "transcript": transcript_filename,
                 "format": subtitle_format
             })
-            print(f"[{idx + 1}/{len(video_list)}] 转录完成: {video_title}")
+            print(f"[{idx + 1}/{len(pending_video_list)}] 转录完成: {video_title}")
         except Exception as e:
             print(f"转录失败 {video_title}: {str(e)}")
             transcripts.append({
@@ -341,16 +568,62 @@ if __name__ == "__main__":
         print("  transcribe: 是否转录 (默认: True)")
         print("  subtitle_format: 字幕格式 (默认: 'txt', 可选: txt/srt/vtt/json)")
         print("  download_subtitle: 是否下载视频自带字幕 (默认: False)")
+        print("  onlysubtitle: 是否仅下载字幕 (默认: False)")
         print("  overwrite_subtitle: 是否覆盖已存在的字幕文件 (默认: True)")
+        print("  cookie: 下载请求 Cookie 字符串 (默认: '')")
+        print("  cookiesfrombrowser: 从浏览器读取 cookies (默认: '')")
+        print("  cookiefile: Netscape 格式 cookie 文件路径 (默认: '')")
         print()
         print('示例1 - 下载并转录: python video_parser.py \'{"urls":["URL"],"output":"./downloads"}\'')
         print('示例2 - 只下载不转录: python video_parser.py \'{"urls":["URL"],"output":"./downloads","transcribe":false}\'')
         print('示例3 - 生成SRT字幕: python video_parser.py \'{"urls":["URL"],"output":"./downloads","subtitle_format":"srt"}\'')
         print('示例4 - 下载视频自带字幕: python video_parser.py \'{"urls":["URL"],"output":"./downloads","download_subtitle":true}\'')
         print('示例5 - 不覆盖已有字幕: python video_parser.py \'{"urls":["URL"],"overwrite_subtitle":false}\'')
+        print('示例6 - 携带 Cookie 下载: python video_parser.py \'{"urls":["URL"],"cookie":"sid=xxx; token=yyy"}\'')
+        print('示例7 - 从浏览器读取 cookies: python video_parser.py \'{"urls":["URL"],"cookiesfrombrowser":"chrome"}\'')
+        print('示例8 - 使用 cookie 文件下载: python video_parser.py \'{"urls":["URL"],"cookiefile":"/path/to/cookies.txt"}\'')
+        print('示例9 - 仅下载字幕: python video_parser.py \'{"urls":["URL"],"output":"./downloads","onlysubtitle":true}\'')
         sys.exit(1)
 
     json_input = ''.join(sys.argv[1:])
-    result = download_videos(json_input)
+    try:
+        cli_params = json.loads(json_input)
+    except json.JSONDecodeError:
+        cli_params = {}
+
+    if cli_params.get("onlysubtitle", False):
+        subtitle_result = download_subtitle(json_input)
+        failed_urls = [
+            item.get("url")
+            for item in subtitle_result.get("results", [])
+            if item.get("url") and (
+                not item.get("subtitle_path") or not os.path.exists(item.get("subtitle_path"))
+            )
+        ]
+
+        if failed_urls:
+            fallback_params = dict(cli_params)
+            fallback_params["urls"] = failed_urls
+            fallback_params["onlysubtitle"] = False
+            fallback_result = download_videos(json.dumps(fallback_params, ensure_ascii=False))
+            result = {
+                "success": subtitle_result.get("success", False) or fallback_result.get("success", False),
+                "message": (
+                    f"{subtitle_result.get('message', '')}；"
+                    f"未下载到字幕的链接已回退到视频下载流程：{fallback_result.get('message', '')}"
+                ),
+                "results": subtitle_result.get("results", []),
+                "fallback": fallback_result
+            }
+        else:
+            result = subtitle_result
+    else:
+        result = download_videos(json_input)
+
     print(result['message'])
-    print(result['transcripts'])
+    if 'results' in result:
+        print(result['results'])
+        if 'fallback' in result:
+            print(result['fallback'].get('transcripts', []))
+    else:
+        print(result['transcripts'])

@@ -1,13 +1,18 @@
 {
   "owner": "upupc",
   "slug": "video-download",
-  "displayName": "Video Download",
+  "displayName": "video-download",
   "latest": {
-    "version": "0.1.5",
-    "publishedAt": 1771306140332,
-    "commit": "https://github.com/openclaw/skills/commit/7f4ed06b7ce0c19ab4bbe1ec70999abe447506e4"
+    "version": "0.1.6",
+    "publishedAt": 1772812221596,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.5",
+      "publishedAt": 1771306140332,
+      "commit": "https://github.com/openclaw/skills/commit/7f4ed06b7ce0c19ab4bbe1ec70999abe447506e4"
+    },
     {
       "version": "0.1.0",
       "publishedAt": 1771166917514,
