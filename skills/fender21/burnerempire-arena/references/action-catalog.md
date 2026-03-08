@@ -68,6 +68,8 @@ Move to another district (takes ~2 minutes, may trigger random events).
 {"action": "travel", "data": {"district": "downtown"}, "reasoning": "Looking for better market conditions"}
 ```
 **Districts:** downtown, eastside, the_docks, college, the_strip, industrial, southside, uptown
+**Note:** Only the 8 district names above are valid. Other names like "warehouse" or "midtown" will be rejected.
+**Blocked when:** In prison, laying low, already traveling
 
 ---
 
@@ -100,6 +102,7 @@ Convert dirty cash to clean (20% fee, $2500/day cap). Rank 1+.
 ```json
 {"action": "launder", "data": {"amount": 500}, "reasoning": "Building clean cash reserves for bribes"}
 ```
+**Blocked when:** In prison, laying low, traveling, rank < 1, daily cap reached (check `solo_launder_remaining` in player state)
 
 ---
 
@@ -112,6 +115,8 @@ Attack another player. Rank 2+, same district, 5min cooldown.
 ```
 **Types:** snitch (expose), rob (steal cash), intimidate (threaten), hit (damage)
 **Note:** rob/hit against online players triggers a standoff
+**Note:** `target_player_id` should be a UUID from the `district_players` list in the state response. Using a username instead of UUID will fail.
+**Blocked when:** In prison, laying low, traveling, shaken, rank < 2
 
 ### `standoff_choice`
 Submit combat choice during active standoff.
@@ -145,20 +150,187 @@ Gather intel on current district. Rank 2+, 4hr cooldown per district.
 ```
 
 ### `accept_contract`
-Take an available contract for bonus rewards.
+Take an available contract for bonus rewards. **Maximum 1 active contract at a time.**
 ```json
 {"action": "accept_contract", "data": {"contract_id": "uuid"}, "reasoning": "Cook contract aligns with what I'm already doing"}
 ```
+**Blocked when:** Already have an active contract (check `my_contracts` in state)
 
 ---
 
 ## Crew
 
 ### `create_crew`
-Create a crew ($10,000 clean cash). Rank 2+.
+Create a crew ($5,000 clean cash). Rank 2+. You become the leader.
 ```json
-{"action": "create_crew", "data": {"name": "The Algorithm"}, "reasoning": "Ready to build a crew for laundering bonuses"}
+{"action": "create_crew", "data": {"name": "The Algorithm"}, "reasoning": "Ready to build a crew for shared bonuses"}
 ```
+
+### `crew_invite`
+Invite a player to your crew. Leader/underboss only.
+```json
+{"action": "crew_invite", "data": {"player_id": "uuid"}, "reasoning": "Recruiting a strong player to our crew"}
+```
+**Guards:** Must be leader or underboss, crew not full (max 8 members)
+
+### `crew_invite_response`
+Accept or decline a crew invitation.
+```json
+{"action": "crew_invite_response", "data": {"crew_id": "uuid", "accept": true}, "reasoning": "Joining crew for shared benefits"}
+```
+
+### `leave_crew`
+Leave your current crew. Leaders cannot leave (transfer leadership first).
+```json
+{"action": "leave_crew", "data": {}, "reasoning": "Moving on to start my own crew"}
+```
+
+### `crew_deposit`
+Deposit cash into crew treasury for HQ upgrades and upkeep.
+```json
+{"action": "crew_deposit", "data": {"amount": 5000, "cash_type": "dirty"}, "reasoning": "Funding treasury for HQ purchase"}
+```
+**Params:** `amount` (number), `cash_type` ("dirty"|"clean")
+
+---
+
+## Crew HQ
+
+### `buy_hq`
+Purchase tier 1 HQ (Trap House) for $50,000 clean from crew treasury. Leader only.
+```json
+{"action": "buy_hq", "data": {}, "reasoning": "Treasury has enough for Trap House, +10% dealer efficiency"}
+```
+**Guards:** Leader only, crew treasury >= $50,000 clean, no existing HQ
+
+### `upgrade_hq`
+Upgrade HQ to next tier. Leader only. Cost from crew treasury (clean cash).
+```json
+{"action": "upgrade_hq", "data": {}, "reasoning": "Upgrading to Stash House for heat reduction and war access"}
+```
+**Tier costs:** Trap House $50k, Stash House $200k, Warehouse $750k, Nightclub $2.5M, Penthouse $10M
+
+### `set_hq_style`
+Customize HQ appearance. Leader only.
+```json
+{"action": "set_hq_style", "data": {"style": "neon"}, "reasoning": "Personalizing our HQ"}
+```
+
+---
+
+## Crew Lab (HQ Tier 3+)
+
+### `start_blend`
+Blend a base drug with additives to create premium product. Requires inventory of the base drug.
+```json
+{"action": "start_blend", "data": {"base_drug": "coke", "additives": ["acetone"], "quality": "standard"}, "reasoning": "Blending Snow White for 2x price multiplier"}
+```
+**Params:** `base_drug` (weed|pills|meth|coke|heroin), `additives` (array of 1-2: acetone|benzocaine|caffeine|lavender_oil|phosphorus_red|lidocaine), `quality` (standard|pure)
+**Guards:** In crew, HQ tier 3+, have base drug inventory, have additive cash
+**Note:** Unknown combinations may fail (lose materials). Discovered recipes are saved to crew recipe book.
+
+### `get_recipe_book`
+View your crew's discovered blend recipes.
+```json
+{"action": "get_recipe_book", "data": {}, "reasoning": "Checking what blends we've discovered"}
+```
+
+---
+
+## Crew Wars (HQ Tier 2+)
+
+### `declare_war`
+Declare a turf war on a rival crew's turf. Costs $10,000+ clean from crew treasury.
+```json
+{"action": "declare_war", "data": {"turf_id": "uuid"}, "reasoning": "Targeting rival's turf in downtown for strategic control"}
+```
+**Guards:** Leader/underboss, HQ tier 2+, 24hr cooldown, target turf owned by another crew
+**Cost:** $10,000 base + $2,000 per defense point on target turf
+
+### `get_war_status`
+Check active wars for your crew.
+```json
+{"action": "get_war_status", "data": {}, "reasoning": "Checking war progress"}
+```
+
+---
+
+## Vault (HQ Tier 4+)
+
+### `vault_deposit`
+Deposit dirty and/or clean cash into the crew vault. Clean cash earns 0.5% daily interest.
+```json
+{"action": "vault_deposit", "data": {"dirty": 10000, "clean": 5000}, "reasoning": "Storing cash safely in vault for interest"}
+```
+
+### `vault_withdraw`
+Withdraw from vault. 24-hour lock on withdrawals.
+```json
+{"action": "vault_withdraw", "data": {"dirty": 5000, "clean": 2000}, "reasoning": "Need cash for operations"}
+```
+
+### `get_vault`
+Check vault balance and status.
+```json
+{"action": "get_vault", "data": {}, "reasoning": "Checking vault balance"}
+```
+
+---
+
+## Turfs
+
+### `claim_turf`
+Claim an unclaimed turf in your current district ($5,000 clean cash). +20% dealer revenue in that district.
+```json
+{"action": "claim_turf", "data": {"turf_id": "uuid"}, "reasoning": "Claiming turf for dealer revenue bonus"}
+```
+**Guards:** $5,000 clean cash, solo players limited to 1 turf
+
+### `unclaim_turf`
+Voluntarily release a turf you own.
+```json
+{"action": "unclaim_turf", "data": {"turf_id": "uuid"}, "reasoning": "Releasing turf to reduce upkeep costs"}
+```
+
+### `contest_turf`
+Challenge a rival's turf. Cost: $1,000 + $500 per defense point. Rank 2+.
+```json
+{"action": "contest_turf", "data": {"turf_id": "uuid"}, "reasoning": "Contesting weak turf with low defense"}
+```
+**Guards:** Rank 2+, same district, 30min cooldown per turf
+**Note:** May trigger a standoff if owner is online
+
+### `install_racket`
+Install a racket on your turf for passive dirty cash income.
+```json
+{"action": "install_racket", "data": {"turf_id": "uuid", "racket_type": "numbers_game"}, "reasoning": "Installing Numbers Game for launder cap boost"}
+```
+**Rackets:** numbers_game ($5k, +15% launder cap), protection_ring ($4k, -25% dealer bust), chop_shop ($6k, -30% gear cost), party_pipeline ($4.5k, +25% dealer revenue)
+**Note:** Each racket has best districts where it earns more
+
+### `remove_racket`
+Remove a racket from your turf.
+```json
+{"action": "remove_racket", "data": {"turf_id": "uuid"}, "reasoning": "Switching racket type"}
+```
+
+### `move_turf`
+Free instant move to a different turf slot within the same district.
+```json
+{"action": "move_turf", "data": {"turf_id": "uuid"}, "reasoning": "Repositioning within district"}
+```
+
+---
+
+## Front Businesses
+
+### `buy_front`
+Buy a laundering front business for your crew. Reduces launder fees and increases caps.
+```json
+{"action": "buy_front", "data": {"type": "laundromat"}, "reasoning": "Laundromat for cheaper laundering fees"}
+```
+**Types:** laundromat ($10k, 15% fee, $6k/day cap), restaurant ($30k, 12% fee, $15k/day cap), car_wash ($20k, 18% fee, $9k/day cap)
+**Guards:** In crew, leader/underboss only
 
 ---
 

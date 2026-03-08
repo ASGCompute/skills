@@ -36,6 +36,11 @@ export class LLMClient {
       response_format: { type: 'json_object' },
     };
 
+    // Disable Qwen3 hidden thinking tokens (billed but discarded)
+    if (this.model.includes('qwen3')) {
+      body.chat_template_kwargs = { enable_thinking: false };
+    }
+
     let lastError;
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       try {

@@ -23,14 +23,21 @@ export class ArenaClient {
 
     const res = await fetch(url, opts);
 
+    // Read body once as text to avoid "Body has already been read" errors
+    const text = await res.text();
+
     if (!res.ok) {
       let errorBody;
-      try { errorBody = await res.json(); } catch { errorBody = await res.text(); }
+      try { errorBody = JSON.parse(text); } catch { errorBody = text; }
       const msg = errorBody?.error || errorBody?.message || JSON.stringify(errorBody);
       throw new ArenaError(msg, res.status, errorBody);
     }
 
-    return res.json();
+    try {
+      return JSON.parse(text);
+    } catch {
+      throw new ArenaError(`Invalid JSON response: ${text.slice(0, 200)}`, res.status, text);
+    }
   }
 
   async _get(path) { return this._request('GET', path); }
@@ -108,6 +115,191 @@ export class ArenaClient {
 
   async getLlmRankings() {
     return this._get('/api/arena/llm-rankings');
+  }
+}
+
+// ── SSE Stream Client ─────────────────────────────────────────────────
+// Maintains a persistent Server-Sent Events connection for real-time
+// state/tick/notification delivery. No npm deps — uses Node.js fetch.
+
+export class ArenaStreamClient {
+  constructor(apiUrl = ARENA_API_URL, apiKey = ARENA_API_KEY) {
+    this.apiUrl = apiUrl.replace(/\/$/, '');
+    this.apiKey = apiKey;
+    this.gameState = null;
+    this.connected = false;
+    this._listeners = {};
+    this._abortController = null;
+    this._reconnectDelay = 1000;
+    this._maxReconnectDelay = 30000;
+    this._shouldReconnect = true;
+  }
+
+  on(event, fn) {
+    if (!this._listeners[event]) this._listeners[event] = [];
+    this._listeners[event].push(fn);
+  }
+
+  _emit(event, data) {
+    for (const fn of (this._listeners[event] || [])) {
+      try { fn(data); } catch {}
+    }
+  }
+
+  async connect(playerId) {
+    this.playerId = playerId;
+    this._shouldReconnect = true;
+    this._reconnectDelay = 1000;
+    await this._connect();
+  }
+
+  disconnect() {
+    this._shouldReconnect = false;
+    if (this._abortController) {
+      this._abortController.abort();
+      this._abortController = null;
+    }
+    this.connected = false;
+  }
+
+  async _connect() {
+    if (this._abortController) {
+      this._abortController.abort();
+    }
+    this._abortController = new AbortController();
+
+    const url = `${this.apiUrl}/api/arena/stream/${this.playerId}`;
+    try {
+      const res = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${this.apiKey}` },
+        signal: this._abortController.signal,
+      });
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new ArenaError(`SSE connect failed: ${res.status}`, res.status, text);
+      }
+
+      this.connected = true;
+      this._reconnectDelay = 1000;
+      this._emit('connected', null);
+
+      await this._readStream(res.body);
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      this.connected = false;
+      this._emit('error', err);
+
+      if (this._shouldReconnect) {
+        const delay = this._reconnectDelay;
+        this._reconnectDelay = Math.min(this._reconnectDelay * 2, this._maxReconnectDelay);
+        this._emit('reconnecting', { delay });
+        await new Promise(r => setTimeout(r, delay));
+        if (this._shouldReconnect) await this._connect();
+      }
+    }
+  }
+
+  async _readStream(body) {
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let currentEvent = 'message';
+    let currentData = '';
+
+    for await (const chunk of body) {
+      if (!this._shouldReconnect) break;
+
+      buffer += decoder.decode(chunk, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // keep incomplete line
+
+      for (const line of lines) {
+        if (line.startsWith('event:')) {
+          currentEvent = line.slice(6).trim();
+        } else if (line.startsWith('data:')) {
+          currentData += (currentData ? '\n' : '') + line.slice(5).trim();
+        } else if (line === '') {
+          // Empty line = end of event
+          if (currentData) {
+            this._handleEvent(currentEvent, currentData);
+          }
+          currentEvent = 'message';
+          currentData = '';
+        }
+        // Lines starting with ':' are comments (keepalive), ignore
+      }
+    }
+
+    // Stream ended
+    this.connected = false;
+    this._emit('disconnected', null);
+
+    if (this._shouldReconnect) {
+      const delay = this._reconnectDelay;
+      this._reconnectDelay = Math.min(this._reconnectDelay * 2, this._maxReconnectDelay);
+      this._emit('reconnecting', { delay });
+      await new Promise(r => setTimeout(r, delay));
+      if (this._shouldReconnect) await this._connect();
+    }
+  }
+
+  _handleEvent(event, data) {
+    let parsed;
+    try { parsed = JSON.parse(data); } catch { return; }
+
+    switch (event) {
+      case 'state':
+        this.gameState = parsed;
+        this._emit('state', parsed);
+        break;
+      case 'tick':
+        this._mergeTick(parsed);
+        this._emit('tick', parsed);
+        break;
+      case 'notification':
+        this._mergeNotification(parsed);
+        this._emit('notification', parsed);
+        break;
+      default:
+        this._emit('message', parsed);
+    }
+  }
+
+  _mergeTick(tick) {
+    if (!this.gameState) return;
+    // Merge player delta
+    if (tick.player_delta && this.gameState.player) {
+      Object.assign(this.gameState.player, tick.player_delta);
+    }
+    // Replace arrays if present
+    if (tick.cook_queue) this.gameState.cook_queue = tick.cook_queue;
+    if (tick.dealers) this.gameState.dealers = tick.dealers;
+    if (tick.inventory) this.gameState.inventory = tick.inventory;
+    if (tick.active_events) this.gameState.active_events = tick.active_events;
+    if (tick.turfs) this.gameState.turfs = tick.turfs;
+  }
+
+  _mergeNotification(notif) {
+    if (!this.gameState) return;
+    // Handle specific notification types that affect state
+    const kind = notif.kind || notif.event;
+    if (kind === 'prison_released' && this.gameState.player) {
+      this.gameState.player.prison_until = null;
+      this.gameState.player.in_prison = false;
+    } else if (kind === 'laying_low_ended' && this.gameState.player) {
+      this.gameState.player.laying_low_until = null;
+    } else if (kind === 'shaken_ended' && this.gameState.player) {
+      this.gameState.player.shaken_until = null;
+      this.gameState.player.is_shaken = false;
+    } else if (kind === 'travel_arrived' && this.gameState.player) {
+      this.gameState.player.travel_to = null;
+      this.gameState.player.travel_arrival_at = null;
+      if (notif.district) this.gameState.player.current_district = notif.district;
+    }
+    // Update contracts_completed_today from contract notifications
+    if (notif.contracts_completed_today !== undefined) {
+      this.gameState.contracts_completed_today = notif.contracts_completed_today;
+    }
   }
 }
 
