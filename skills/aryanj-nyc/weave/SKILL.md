@@ -1,6 +1,6 @@
 ---
 name: weave
-description: Create crypto invoices and stablecoin invoices (USDC/USDT), generate payment quotes, and monitor invoice payment status with the Weave CLI.
+description: Use when creating crypto or stablecoin invoices, generating payment quotes, or tracking invoice payment status with the Weave CLI.
 license: AGPL-3.0-or-later
 metadata:
   openclaw:
@@ -41,7 +41,7 @@ metadata:
 
 # Weave
 
-Weave is a CLI for crypto invoicing: create USDC invoices, USDT invoices, and cross-token payment quotes, then track settlement status. Use this when you need a crypto invoice generator for agent workflows or operations.
+Weave is a CLI for crypto invoicing and cross-chain payment workflows. Use this when you need to create Bitcoin, Ethereum, Solana, USDC, or USDT invoices, generate payment quotes, and monitor settlement across supported networks such as Base, Tron, and Zcash for agent workflows or operations.
 
 ## Overview
 
