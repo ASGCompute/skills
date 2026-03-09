@@ -1,6 +1,20 @@
 ---
 name: felo
 description: "AI-synthesized web search via Felo API — aggregates 15-40 sources into structured summaries. Use when: (1) researching a topic that needs multi-source synthesis, (2) scanning community trends (Reddit, GitHub, X, blogs), (3) market news requiring cross-source analysis, (4) phrases like '幫我查', '搜尋一下', 'research', 'what's trending'. NOT for: single-site lookups (use web_fetch), time-critical queries needing exact timestamps (use web_search), or quick 1-second lookups."
+license: MIT
+metadata:
+  {
+    "openclaw":
+      {
+        "emoji": "🔍",
+        "requires":
+          {
+            "bins": ["curl", "jq"],
+            "env": ["FELO_API_KEY"],
+            "optionalPaths": ["~/.config/felo/api_key"],
+          },
+      },
+  }
 ---
 
 # Felo AI Search
@@ -15,20 +29,23 @@ Use Felo AI for comprehensive, AI-summarized web search when you need:
 - Single-source lookups (use web_fetch instead)
 - When speed is critical (Felo takes ~15 seconds vs web_search ~1 second)
 
-## Authentication
+## Setup
 
-API key location: `~/.config/felo/api_key`
-
-```bash
-cat ~/.config/felo/api_key
-# Returns: fk-Kfcl9cKqX18y3d93qAk06dK3f0dHowiycT6OqcSkMqfQjDal
-```
+1. Sign up at [felo.ai](https://felo.ai) and get an API key from **Settings → API Keys**
+2. Store the key in one of these ways:
+   - **Environment variable** (recommended): `export FELO_API_KEY="your-key-here"`
+   - **File** (set strict permissions):
+     ```bash
+     mkdir -p ~/.config/felo
+     echo "your-key-here" > ~/.config/felo/api_key
+     chmod 600 ~/.config/felo/api_key
+     ```
 
 ## Basic Usage
 
 ```bash
 curl -s -X POST https://openapi.felo.ai/v2/chat \
-  -H "Authorization: Bearer $(cat ~/.config/felo/api_key)" \
+  -H "Authorization: Bearer ${FELO_API_KEY:-$(cat ~/.config/felo/api_key 2>/dev/null)}" \
   -H "Content-Type: application/json" \
   -d '{"query": "Your search query here (1-2000 chars)"}' | jq .
 ```
@@ -60,36 +77,19 @@ curl -s -X POST https://openapi.felo.ai/v2/chat \
 
 ## Common Patterns
 
-### Community Scanning (Cron Job)
+### Community Scanning
 
 ```bash
-# Query: Broad topic + time constraint + source diversity
 curl -s -X POST https://openapi.felo.ai/v2/chat \
-  -H "Authorization: Bearer $(cat ~/.config/felo/api_key)" \
+  -H "Authorization: Bearer ${FELO_API_KEY:-$(cat ~/.config/felo/api_key 2>/dev/null)}" \
   -H "Content-Type: application/json" \
   -d '{
     "query": "What are the top 5 trending topics in the OpenClaw AI agent community this week? Include specific discussions from Reddit, GitHub, X (Twitter), forums, and blogs. Provide source links."
   }' > /tmp/felo_result.json
 
-# Extract structured output
 ANSWER=$(jq -r '.data.answer' /tmp/felo_result.json)
 SOURCES=$(jq -r '.data.resources[0:10] | .[] | "- [\(.title)](\(.link))"' /tmp/felo_result.json)
 SOURCE_COUNT=$(jq '.data.resources | length' /tmp/felo_result.json)
-```
-
-### Interactive Research
-
-```bash
-# For one-off queries
-felo_query() {
-  local query="$1"
-  curl -s -X POST https://openapi.felo.ai/v2/chat \
-    -H "Authorization: Bearer $(cat ~/.config/felo/api_key)" \
-    -H "Content-Type: application/json" \
-    -d "{\"query\": \"$query\"}" | jq -r '.data.answer'
-}
-
-felo_query "Compare memory-lancedb-pro vs mem0 for AI agent long-term memory"
 ```
 
 ## Rate Limits
@@ -101,7 +101,7 @@ felo_query "Compare memory-lancedb-pro vs mem0 for AI agent long-term memory"
 ## Error Handling
 
 Common errors:
-- `INVALID_API_KEY` (401) — Check `~/.config/felo/api_key`
+- `INVALID_API_KEY` (401) — Check your API key
 - `QUERY_TOO_LONG` (400) — Max 2000 chars
 - `RATE_LIMIT_EXCEEDED` (429) — Slow down requests
 
@@ -110,10 +110,10 @@ Common errors:
 | Use Case | Tool | Reason |
 |----------|------|--------|
 | Community trends (5+ sources) | **Felo** | AI synthesis, broader coverage |
-| Specific site search (`site:reddit.com`) | **web_search** | Precise site: operator |
-| Need timestamps ("1 day ago") | **web_search** | Felo has no time metadata |
-| Research requiring cross-source analysis | **Felo** | AI-generated insights |
-| Speed-critical queries | **web_search** | ~1s vs ~15s |
+| Specific site search | **web_search** | Precise site: operator |
+| Need timestamps | **web_search** | Felo has no time metadata |
+| Cross-source analysis | **Felo** | AI-generated insights |
+| Speed-critical | **web_search** | ~1s vs ~15s |
 
 ## Notes
 
