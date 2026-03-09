@@ -1,13 +1,18 @@
 {
   "owner": "ivangdavila",
   "slug": "skill-finder",
-  "displayName": "Skill Finder - Search Skills",
+  "displayName": "Skill Finder (Find ClawHub skills + Search Skills.sh)",
   "latest": {
-    "version": "1.1.2",
-    "publishedAt": 1772447687490,
-    "commit": "https://github.com/openclaw/skills/commit/0e32ed57ce6f6487b66c77c5698d61e57137b358"
+    "version": "1.1.4",
+    "publishedAt": 1773073441987,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.1.2",
+      "publishedAt": 1772447687490,
+      "commit": "https://github.com/openclaw/skills/commit/0e32ed57ce6f6487b66c77c5698d61e57137b358"
+    },
     {
       "version": "1.1.0",
       "publishedAt": 1772058481927,

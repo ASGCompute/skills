@@ -9,7 +9,7 @@ Reference for handling edge cases and common problems.
 **If still nothing:**
 
 1. **Acknowledge honestly**
-   > "I searched for skills related to [X] but didn't find any matches."
+   > "I searched for skills related to [X] in the configured sources but didn't find any strong matches."
 
 2. **Offer direct help**
    > "I can help you with this directly using my general capabilities."
@@ -42,13 +42,13 @@ Reference for handling edge cases and common problems.
 
 2. **Check what triggered it**
    ```bash
-   clawhub inspect <slug> --files
+   npx clawhub inspect <slug> --files
    ```
 
 3. **Default to safer alternatives**
    > "I can recommend similar skills that are not flagged, then we pick the best match."
 
-4. **Do not bypass scanner warnings**
+4. **Do not skip scanner warnings**
    - Never use force-install options
    - Prefer normal installation only for non-flagged options with explicit user consent
 
@@ -58,17 +58,19 @@ Reference for handling edge cases and common problems.
 - Typo in slug
 - Skill was deleted/hidden
 - Author changed the name
+- Skills.sh result points to a repo or skill path that changed
 
 **Solutions:**
 1. Search by description instead of exact name
-2. Check for similar names: `clawhub search "partial-name"`
-3. The skill may have been replaced — search the domain
+2. Check for similar names: `npx clawhub search "partial-name"`
+3. Re-run `npx skills find [domain]` if the missing result came from Skills.sh
+4. The skill may have been replaced — search the domain
 
 ## Conflicting Skills
 
 **Problem:** User wants a skill that overlaps with one already installed.
 
-**Detection:** Check `clawhub list` for existing skills in same domain.
+**Detection:** Check `npx clawhub list` for existing skills in same domain.
 
 **Resolution:**
 1. **Explain the overlap**
@@ -80,7 +82,8 @@ Reference for handling edge cases and common problems.
 ## User Changed Their Mind
 
 **After installation:**
-- Uninstall: `clawhub update` then remove from skills folder
+- Uninstall: `npx clawhub uninstall <slug>`
+- Remove Skills.sh install: `npx skills remove <skill>`
 - Don't reinstall: Add to Passed in memory.md with reason
 
 **During recommendation:**
@@ -95,6 +98,17 @@ Reference for handling edge cases and common problems.
 
 **How to handle:**
 > "This skill was last updated [X months] ago. It references [old version]. Want to try anyway, or should I look for alternatives?"
+
+## Source Mismatch
+
+**Problem:** A result was found in one ecosystem, but the install command shown belongs to the other.
+
+**Resolution:**
+1. Restate the source clearly
+2. Use the install command that belongs to that source only
+3. If needed, present an equivalent result from the other ecosystem instead
+
+> "This result is from Skills.sh, so the correct install path is `npx skills add owner/repo@skill`, not `clawhub install`."
 
 ## Memory Issues
 
