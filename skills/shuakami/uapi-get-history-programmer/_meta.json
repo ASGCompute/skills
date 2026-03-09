@@ -1,0 +1,11 @@
+{
+  "owner": "shuakami",
+  "slug": "uapi-get-history-programmer",
+  "displayName": "UAPI 程序员历史事件 接口",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773084673551,
+    "commit": null
+  },
+  "history": []
+}
