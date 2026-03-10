@@ -1,12 +1,11 @@
 #!/bin/bash
 # KB Collector - Digest Generator
 # Usage: ./digest.sh [weekly|monthly|yearly] [--send]
+# Uses gog for email sending (no need to store credentials)
 
 TYPE="${1:-weekly}"
 VAULT="/Users/george/Documents/Georges/Knowledge"
 RECIPIENT="george@precaster.com.tw"
-EMAIL="george@precaster.com.tw"
-APP_PASSWORD="yxio cqru vchu jgdo"
 
 # Date ranges
 case "$TYPE" in
@@ -16,14 +15,14 @@ case "$TYPE" in
         ;;
     monthly)
         SINCE=$(date -v-30d +%Y-%m-%d 2>/dev/null || date -d "30 days ago" +%Y-%m-%d)
-        SUBJECT="📊 每月知識摘要 $(date +%Y-%m)"
+        SUBJECT="📊 每月知識摘要 $(date +%Y-%m-%d)"
         ;;
     yearly)
         SINCE="2025-01-01"
         SUBJECT="🎯 年度回顧與展望 $(date +%Y)"
         ;;
     *)
-        echo "Usage: digest.sh [weekly|monthly|yearly] [--send]"
+        echo "Usage: ./digest.sh [weekly|monthly|yearly] [--send]"
         exit 1
         ;;
 esac
@@ -38,6 +37,7 @@ echo "Generating $TYPE digest since $SINCE..."
 
 # Extract tags and titles from markdown files
 > /tmp/digest_tags.txt
+> /tmp/digest_files.txt
 
 for file in "$VAULT"/*.md; do
     [ -f "$file" ] || continue
@@ -53,7 +53,8 @@ for file in "$VAULT"/*.md; do
         continue
     fi
     
-    TITLE=$(grep -m1 "^# " "$file" 2>/dev/null | sed 's/^# //')
+    TITLE=$(grep -m1 "^#" "$file" 2>/dev/null | sed 's/^#* *//')
+    [ -z "$TITLE" ] && TITLE=$(grep -m1 "^# " "$file" 2>/dev/null | sed 's/^# //')
     [ -z "$TITLE" ] && TITLE="${file##*/}"
     
     TAGS=$(grep -m1 "^tags:" "$file" 2>/dev/null | sed 's/.*tags: *\[//' | sed 's/\]//' | tr ',' '\n' | tr -d ' ' | grep -v '^$')
@@ -65,12 +66,20 @@ for file in "$VAULT"/*.md; do
     else
         echo "無標籤|$TITLE|${file##*/}"
     fi
+    
+    echo "$file" >> /tmp/digest_files.txt
 done | sort >> /tmp/digest_tags.txt
+
+# Count notes
+NOTE_COUNT=$(wc -l < /tmp/digest_files.txt 2>/dev/null || echo "0")
 
 # Generate report
 case "$TYPE" in
     weekly|monthly)
         echo "=== $TYPE Digest ===" > /tmp/digest_content.txt
+        echo "" >> /tmp/digest_content.txt
+        echo "📅 期間: $SINCE ~ $(date +%Y-%m-%d)" >> /tmp/digest_content.txt
+        echo "📚 筆記數: $NOTE_COUNT 篇" >> /tmp/digest_content.txt
         echo "" >> /tmp/digest_content.txt
         echo "## 📈 標籤統計" >> /tmp/digest_content.txt
         echo "" >> /tmp/digest_content.txt
@@ -78,9 +87,9 @@ case "$TYPE" in
             echo "- **$tag**: $count 篇" >> /tmp/digest_content.txt
         done
         echo "" >> /tmp/digest_content.txt
-        echo "## 📝 近期筆記" >> /tmp/digest_content.txt
+        echo "## 📝 筆記列表" >> /tmp/digest_content.txt
         echo "" >> /tmp/digest_content.txt
-        cut -d'|' -f2 /tmp/digest_tags.txt | head -20 | while read title; do
+        cut -d'|' -f2 /tmp/digest_tags.txt | sort -u | while read title; do
             echo "- $title" >> /tmp/digest_content.txt
         done
         ;;
@@ -107,31 +116,17 @@ esac
 echo ""
 cat /tmp/digest_content.txt
 
-# Send email if requested
+# Send email if requested (using gog)
 if [ -n "$SEND_EMAIL" ]; then
     echo ""
-    echo "Sending email to $RECIPIENT..."
-    python3 - << EOF
-import smtplib
-from email.mime.text import MIMEText
-
-with open('/tmp/digest_content.txt', 'r') as f:
-    body = f.read()
-
-msg = MIMEText(body, 'plain', 'utf-8')
-msg['Subject'] = '$SUBJECT'
-msg['From'] = '$EMAIL'
-msg['To'] = '$RECIPIENT'
-
-server = smtplib.SMTP('smtp.gmail.com', 587)
-server.starttls()
-server.login('$EMAIL', '$APP_PASSWORD')
-server.send_message(msg)
-server.quit()
-print('Email sent!')
-EOF
+    echo "Sending email to $RECIPIENT via gog..."
+    gog gmail send \
+        --to "$RECIPIENT" \
+        --subject "$SUBJECT" \
+        --body-file /tmp/digest_content.txt
+    echo "Email sent!"
 fi
 
-rm -f /tmp/digest_tags.txt /tmp/digest_content.txt
+rm -f /tmp/digest_tags.txt /tmp/digest_content.txt /tmp/digest_files.txt
 echo ""
 echo "Done!"

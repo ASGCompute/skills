@@ -1,6 +1,6 @@
 ---
 name: kb-collector
-description: Knowledge Base Collector - save YouTube, URLs, text to Obsidian with AI summarization. Auto-transcribes videos, fetches pages, supports weekly/monthly digest emails.
+description: Knowledge Base Collector - save YouTube, URLs, text to Obsidian with AI summarization. Auto-transcribes videos, fetches pages, supports weekly/monthly digest emails and nightly research.
 ---
 
 # KB Collector
@@ -13,6 +13,7 @@ Knowledge Base Collector - Save YouTube, URLs, and text to Obsidian with automat
 - **URL Collection** - Fetch and summarize web pages
 - **Plain Text** - Direct save with tags
 - **Digest** - Weekly/Monthly/Yearly review emails
+- **Nightly Research** - Automated AI/LLM/tech trend tracking
 
 ## Installation
 
@@ -46,8 +47,35 @@ python3 scripts/collect.py text "My note content" "tag1,tag2"
 # Collect URL
 ./scripts/collect.sh "https://example.com/article" "python,api" url
 
-# Collect text
+# Collect plain text
 ./scripts/collect.sh "My note" "tag1,tag2" text
+```
+
+## Nightly Research (New!)
+
+Automated AI/LLM/tech trend tracking - runs daily and saves to Obsidian.
+
+```bash
+# Save to Obsidian only
+./scripts/nightly-research.sh --save
+
+# Save to Obsidian AND send email
+./scripts/nightly-research.sh --save --send
+
+# Send email only
+./scripts/nightly-research.sh --send
+```
+
+### Features
+- Searches multiple sources (Hacker News, Reddit, Twitter)
+- LLM summarization (optional)
+- Saves to Obsidian with tags
+- Optional email digest
+
+### Cron Setup (optional)
+```bash
+# Run every night at 10 PM
+0 22 * * * /path/to/nightly-research.sh --save --send
 ```
 
 ## Configuration

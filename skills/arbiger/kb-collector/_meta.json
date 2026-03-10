@@ -3,9 +3,15 @@
   "slug": "kb-collector",
   "displayName": "Kb Collector",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1772511309155,
-    "commit": "https://github.com/openclaw/skills/commit/293c343c4cf392253eaca0b00c44005db363b07a"
+    "version": "1.2.1",
+    "publishedAt": 1772971263622,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1772511309155,
+      "commit": "https://github.com/openclaw/skills/commit/293c343c4cf392253eaca0b00c44005db363b07a"
+    }
+  ]
 }
