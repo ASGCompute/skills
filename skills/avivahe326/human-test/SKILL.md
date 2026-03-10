@@ -1,15 +1,15 @@
 ---
 name: human_test
 slug: human-test
-description: "Call real humans to test your product. Get structured usability feedback with NPS scores, step-by-step task reports, and AI-aggregated findings."
-summary: "human_test() — hire real humans to test any URL. Returns an AI-generated usability report with NPS analysis and actionable recommendations."
+description: "Call real humans to test your product (URL or app). Get structured usability feedback with screen recordings, NPS scores, and AI-aggregated findings."
+summary: "human_test() — hire real humans to test any product. Returns an AI-generated usability report with video analysis, NPS scores, and actionable recommendations."
 tags:
   - testing
   - usability
   - feedback
   - ux-research
   - human-in-the-loop
-version: 1.0.0
+version: 1.6.0
 ---
 
 # human_test() — Real Human Feedback for AI Products
@@ -18,26 +18,51 @@ AI agents cannot judge human perception, emotion, or usability. This skill lets 
 
 ## What it does
 
-1. You call `human_test()` with a product URL
+1. You call `human_test()` with a product URL or description (URL is optional — also works for mobile apps, desktop software, etc.)
 2. AI auto-generates a structured test plan
 3. Real human testers claim the task on the web platform
-4. Each tester completes a 3-step guided feedback flow (first impression, task steps, NPS rating)
-5. AI aggregates all feedback into a structured report with severity-ranked findings
+4. Each tester records their screen and microphone (up to 15 min) while completing a guided feedback flow — first impression, task steps, NPS rating
+5. AI extracts key frames from each recording and uses vision AI to analyze usability issues, then aggregates all feedback into a structured report with severity-ranked findings
+
+## Setup
+
+### Option A: Hosted (zero setup)
+
+Use the hosted version at **https://human-test.work** — no installation needed. Register to get an API key, then skip to **Create a test task** below using `BASE_URL=https://human-test.work`.
+
+### Option B: Self-hosted (auto-install)
+
+human_test() can run locally. Before creating a task, check if the server is reachable:
+
+```bash
+curl -s BASE_URL/api/config
+```
+
+If the server is not running, install and start it:
+
+```bash
+npm i -g humantest-app
+cd /tmp && humantest init --non-interactive && cd humantest && humantest start
+```
+
+This auto-detects AI API keys from your environment (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `DEEPSEEK_API_KEY`, or `GEMINI_API_KEY`), creates a local SQLite database, builds the app, and starts it on port 3000.
+
+A default admin user is created automatically — no registration needed.
+
+**Set `BASE_URL`**: Ask the user once for their preferred base URL. Default: `http://localhost:3000`
 
 ## Quick start
-
-You need an API key. Register at https://human-test.work/register to get one (free).
 
 ### Create a test task
 
 ```bash
-curl -X POST https://human-test.work/api/skill/human-test \
-  -H "Authorization: Bearer <your-api-key>" \
+curl -X POST BASE_URL/api/skill/human-test \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://your-product.com",
     "focus": "Test the onboarding flow",
-    "maxTesters": 5
+    "maxTesters": 5,
+    "creator": "agent-name"
   }'
 ```
 
@@ -53,8 +78,7 @@ Response:
 ### Check progress and get the report
 
 ```bash
-curl https://human-test.work/api/skill/status/<taskId> \
-  -H "Authorization: Bearer <your-api-key>"
+curl BASE_URL/api/skill/status/<taskId>
 ```
 
 Response (when completed):
@@ -63,36 +87,65 @@ Response (when completed):
   "taskId": "cm...",
   "status": "COMPLETED",
   "submittedCount": 5,
-  "report": "## Executive Summary\n..."
+  "report": "## Executive Summary\n...",
+  "reportStatus": "COMPLETED",
+  "codeFixStatus": "COMPLETED",
+  "codeFixPrUrl": "https://github.com/user/repo/pull/1"
 }
 ```
+
+> **Note for agents:** If `repoUrl` was provided, code fix generation starts automatically after the report is ready — no need to trigger it manually. Keep polling until `codeFixStatus` is `COMPLETED` or `FAILED`, or use `codeFixWebhookUrl` to get notified.
 
 ## Parameters
 
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|
-| `url` | Yes | — | Product URL to test |
+| `url` | No | — | Product URL to test (optional — leave empty for mobile apps or non-web products) |
 | `title` | No | Auto from hostname | Task title |
 | `focus` | No | — | What testers should focus on |
 | `maxTesters` | No | 5 | Number of testers (1-50) |
 | `estimatedMinutes` | No | 10 | Expected test duration |
+| `creator` | No | admin | Name of the agent/user creating the task (auto-creates a user if needed) |
 | `webhookUrl` | No | — | HTTPS URL to receive the report on completion |
-| `repoUrl` | No | — | GitHub/Gitee repo URL for code-level fix suggestions |
+| `codeFixWebhookUrl` | No | — | HTTPS URL to receive code fix results on completion |
+| `repoUrl` | No | — | GitHub repo URL for code-level fix suggestions |
 | `repoBranch` | No | repo default | Branch to analyze (only used with repoUrl) |
+| `locale` | No | `en` | Report language: `en` (English) or `zh` (Chinese) |
 
-## Async webhook
+## Async webhooks
 
-If you provide a `webhookUrl`, the platform will POST the full report to that URL when all testers have submitted:
+There are two separate webhooks for the two stages:
+
+### Report webhook (`webhookUrl`)
+
+If you provide a `webhookUrl`, the platform will POST the report to that URL when it's ready:
 
 ```json
 {
+  "event": "report",
   "taskId": "...",
   "status": "COMPLETED",
   "title": "Test: example.com",
   "targetUrl": "https://example.com",
   "report": "## Executive Summary\n...",
-  "codeFixPrUrl": "https://github.com/user/repo/pull/1",
   "completedAt": "2026-03-02T12:00:00Z"
+}
+```
+
+### Code fix webhook (`codeFixWebhookUrl`)
+
+If you provide a `codeFixWebhookUrl`, the platform will POST the code fix result when done:
+
+```json
+{
+  "event": "code_fix",
+  "taskId": "...",
+  "status": "COMPLETED",
+  "title": "Test: example.com",
+  "targetUrl": "https://example.com",
+  "codeFixStatus": "COMPLETED",
+  "codeFixPrUrl": "https://github.com/user/repo/pull/1",
+  "completedAt": "2026-03-02T12:30:00Z"
 }
 ```
 
@@ -168,7 +221,7 @@ Each issue's **Evidence** tells you what went wrong, **Impact** tells you why it
 
 ## Repo-aware code fix suggestions
 
-If you pass a `repoUrl`, the platform will clone your repo after the report is generated and produce **file-level code fix suggestions** (with unified diffs) appended to the report as a `## Code Fix Suggestions` section.
+If you pass a `repoUrl`, the platform automatically triggers code fix generation as soon as the report is ready. It clones your repo, analyzes the code against reported issues, and produces **file-level code fix suggestions** (with unified diffs) appended to the report as a `## Code Fix Suggestions` section.
 
 ### Two modes (auto-detected)
 
@@ -179,19 +232,19 @@ If you pass a `repoUrl`, the platform will clone your repo after the report is g
 ### Example with repoUrl
 
 ```bash
-curl -X POST https://human-test.work/api/skill/human-test \
-  -H "Authorization: Bearer <your-api-key>" \
+curl -X POST BASE_URL/api/skill/human-test \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://your-product.com",
     "focus": "Test the checkout flow",
     "repoUrl": "https://github.com/your-org/your-repo",
     "repoBranch": "main",
-    "webhookUrl": "https://your-server.com/webhook"
+    "webhookUrl": "https://your-server.com/webhook",
+    "codeFixWebhookUrl": "https://your-server.com/code-fix-webhook"
   }'
 ```
 
 ## Links
 
 - Web platform: https://human-test.work
-- API docs: https://human-test.work/settings (after login, shows curl examples)
+- GitHub: https://github.com/avivahe326/humantest

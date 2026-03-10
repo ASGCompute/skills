@@ -3,11 +3,16 @@
   "slug": "human-test",
   "displayName": "Human Test",
   "latest": {
-    "version": "1.3.1",
-    "publishedAt": 1772882477887,
-    "commit": "https://github.com/openclaw/skills/commit/39076fd2a59337c665d1237ba4ba88438143e615"
+    "version": "1.6.1",
+    "publishedAt": 1772991976102,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.3.1",
+      "publishedAt": 1772882477887,
+      "commit": "https://github.com/openclaw/skills/commit/39076fd2a59337c665d1237ba4ba88438143e615"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1772462476034,
