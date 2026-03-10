@@ -7,6 +7,20 @@ description: AI-powered crypto trading behavior coach for Binance users. Analyze
 
 AI-powered crypto trading behavior coach. Connects to the user's Binance account (read-only) and provides portfolio analysis, behavioral coaching, and smart DCA recommendations via Claude.
 
+## How AI coaching works in OpenClaw mode
+
+When used as an OpenClaw skill, **only a Binance API key is required**:
+
+| | OpenClaw skill | Standalone bot |
+|---|---|---|
+| Binance API key | ✅ Required | ✅ Required |
+| Anthropic API key | ❌ Not needed | ✅ Required |
+| Telegram bot token | ❌ Not needed | ✅ Required |
+
+OpenClaw is already Claude and already handles Telegram. BinanceCoach provides the Binance data layer — OpenClaw does the AI analysis and messaging natively.
+
+The `bc.sh coach`, `bc.sh weekly`, `bc.sh ask`, and `bc.sh telegram` commands exist for standalone use only. In OpenClaw mode, just ask naturally — the data commands are all you need.
+
 ## Setup (run this first)
 
 ```bash

@@ -79,24 +79,40 @@ set_env "BINANCE_API_SECRET" "$BINANCE_SECRET"
 
 # ── Anthropic API ─────────────────────────────────────────────────────────────
 echo ""
-echo "2️⃣  Anthropic API Key (for AI coaching)"
-echo "   → console.anthropic.com → API Keys → Create Key"
+echo "2️⃣  Anthropic API Key"
+echo "   ℹ️  If you're using BinanceCoach via OpenClaw (plugin mode),"
+echo "      you can SKIP this — OpenClaw already has Claude built in."
+echo "      Only needed for the standalone Telegram bot or CLI."
 echo ""
-ANTHROPIC_KEY="$(prompt_key "ANTHROPIC_API_KEY" "Anthropic API Key")"
-set_env "ANTHROPIC_API_KEY" "$ANTHROPIC_KEY"
+read -rp "  Set up Anthropic API key? [y/N]: " setup_anthropic
+if [[ "${setup_anthropic,,}" == "y" ]]; then
+    echo "   → console.anthropic.com → API Keys → Create Key"
+    echo ""
+    ANTHROPIC_KEY="$(prompt_key "ANTHROPIC_API_KEY" "Anthropic API Key")"
+    set_env "ANTHROPIC_API_KEY" "$ANTHROPIC_KEY"
+else
+    echo "   ⏭️  Skipped — OpenClaw will handle AI analysis natively."
+fi
 
 # ── Telegram (optional) ───────────────────────────────────────────────────────
 echo ""
-echo "3️⃣  Telegram Bot (optional — skip with Enter)"
-echo "   → Telegram: message @BotFather → /newbot → copy token"
-echo "   → Your Telegram user ID: message @userinfobot"
+echo "3️⃣  Telegram Bot"
+echo "   ℹ️  If you're using BinanceCoach via OpenClaw, skip this too."
+echo "      OpenClaw already handles Telegram — no separate bot needed."
+echo "      Only needed if you want a dedicated @BinanceCoachAIBot"
+echo "      running independently of OpenClaw."
 echo ""
-read -rp "  Set up Telegram bot? [y/N]: " setup_tg
+read -rp "  Set up standalone Telegram bot? [y/N]: " setup_tg
 if [[ "${setup_tg,,}" == "y" ]]; then
+    echo "   → Telegram: message @BotFather → /newbot → copy token"
+    echo "   → Your Telegram user ID: message @userinfobot"
+    echo ""
     TG_TOKEN="$(prompt_key "TELEGRAM_BOT_TOKEN" "Bot Token")"
     TG_UID="$(prompt_key "TELEGRAM_USER_ID" "Your Telegram User ID")"
     set_env "TELEGRAM_BOT_TOKEN" "$TG_TOKEN"
     set_env "TELEGRAM_USER_ID" "$TG_UID"
+else
+    echo "   ⏭️  Skipped — OpenClaw handles Telegram natively."
 fi
 
 # ── Language ──────────────────────────────────────────────────────────────────
