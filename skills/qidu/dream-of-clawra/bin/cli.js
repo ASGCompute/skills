@@ -28,16 +28,15 @@ const colors = {
 const c = (color, text) => `${colors[color]}${text}${colors.reset}`;
 
 // Paths
-
 const HOME = os.homedir();
 const OPENCLAW_DIR = path.join(HOME, ".openclaw");
-OPENCLAW_SKILLS_DIR = path.join(OPENCLAW_DIR, "skills");
-OPENCLAW_WORKSPACE = path.join(OPENCLAW_DIR, "workspace");
-
+const OPENCLAW_CONFIG = path.join(OPENCLAW_DIR, "openclaw.json");
+const OPENCLAW_SKILLS_DIR = path.join(OPENCLAW_DIR, "skills");
+const OPENCLAW_WORKSPACE = path.join(OPENCLAW_DIR, "workspace");
+const SOUL_MD = path.join(OPENCLAW_WORKSPACE, "SOUL.md");
+const IDENTITY_MD = path.join(OPENCLAW_WORKSPACE, "IDENTITY.md");
 const SKILL_NAME = "dream-of-clawra";
-SOUL_MD = path.join(OPENCLAW_WORKSPACE, "SOUL.md");
-IDENTITY_MD = path.join(OPENCLAW_WORKSPACE, "IDENTITY.md");
-SKILL_DEST = path.join(OPENCLAW_SKILLS_DIR, SKILL_NAME);
+const SKILL_DEST = path.join(OPENCLAW_SKILLS_DIR, SKILL_NAME);
 
 // Get the package root (where this CLI was installed from)
 const PACKAGE_ROOT = path.resolve(__dirname, "..");
@@ -90,27 +89,6 @@ function commandExists(cmd) {
     return true;
   } catch {
     return false;
-  }
-}
-
-// Check if workspace
-function commandWorkspace(whichone) {
-  try {
-    if (whichone === "main") {
-        ws = execSync(`openclaw config get agents.defaults.workspace | tail -n 1 | tr -d '\r\n\t '`, { stderr: "ignore" });
-        ws = ws.toString();
-        return `${ws}`
-    }
-    const output = execSync(`openclaw config get agents.list | tr -d '\r\n\t '`, {stderr: "ignore"}).toString();
-    const entries = JSON.parse(output);
-    for (const entry of entries) {
-        if (entry.id === whichone || entry.name === whichone) {
-            return `${entry.workspace}`
-        }
-    }
-    return "/tmp/__UNKNOWN1";
-  } catch {
-    return "/tmp/__UNKNOWN2";
   }
 }
 
@@ -188,13 +166,16 @@ function copyDir(src, dest) {
 function printBanner() {
   console.log(`
 ${c("magenta", "┌─────────────────────────────────────────┐")}
-${c("magenta", "│")}  ${c("bright", "Dancing and Selfie")} - OpenClaw Skill Installer ${c("magenta", "│")}
+${c("magenta", "│")}  ${c("bright", "Clawra Selfie")} - OpenClaw Skill Installer ${c("magenta", "│")}
 ${c("magenta", "└─────────────────────────────────────────┘")}
+
+Add selfie generation superpowers to your OpenClaw agent!
+Uses ${c("cyan", "xAI Grok Imagine")} via ${c("cyan", "fal.ai")} for image editing.
 `);
 }
 
 // Check prerequisites
-async function checkPrerequisites(rl) {
+async function checkPrerequisites() {
   logStep("1/5", "Checking prerequisites...");
 
   // Check OpenClaw CLI
@@ -206,37 +187,15 @@ async function checkPrerequisites(rl) {
   }
   logSuccess("OpenClaw CLI installed");
 
-  // Get workspace main, change files there
-  whichone = await ask(rl, "Which agent's SOUL do you want to change  (main/?):");
-  logSuccess(`Agent: ${whichone}`)
-
-  OPENCLAW_WORKSPACE = commandWorkspace(whichone);
-  if (OPENCLAW_WORKSPACE.startsWith("/tmp/__UNKNOWN")) {
-    logError(`No workspace for ${whichone}, using default workspace.`);
-    OPENCLAW_WORKSPACE = path.join(OPENCLAW_DIR, "workspace");
-  }
-  logInfo(`Workspace: ${OPENCLAW_WORKSPACE}`);
-
-  SOUL_MD = path.join(OPENCLAW_WORKSPACE, "SOUL.md");
-  IDENTITY_MD = path.join(OPENCLAW_WORKSPACE, "IDENTITY.md");
-  OPENCLAW_SKILLS_DIR = path.join(OPENCLAW_WORKSPACE, "skills");
-  SKILL_DEST = path.join(OPENCLAW_SKILLS_DIR, SKILL_NAME);
-
-  continued = await ask(rl, "Shall we continue? (y/N):");
-  if (continued !== "y") {
-    logError("Stop installing now.");
-    return false;
-  }
-
   // Check ~/.openclaw directory
-  // if (!fs.existsSync(OPENCLAW_DIR)) {
-  //   logWarn("~/.openclaw directory not found");
-  //   logInfo("Creating directory structure...");
-  //   fs.mkdirSync(OPENCLAW_DIR, { recursive: true });
-  //   fs.mkdirSync(OPENCLAW_SKILLS_DIR, { recursive: true });
-  //   fs.mkdirSync(OPENCLAW_WORKSPACE, { recursive: true });
-  // }
-  // logSuccess("OpenClaw directory exists");
+  if (!fs.existsSync(OPENCLAW_DIR)) {
+    logWarn("~/.openclaw directory not found");
+    logInfo("Creating directory structure...");
+    fs.mkdirSync(OPENCLAW_DIR, { recursive: true });
+    fs.mkdirSync(OPENCLAW_SKILLS_DIR, { recursive: true });
+    fs.mkdirSync(OPENCLAW_WORKSPACE, { recursive: true });
+  }
+  logSuccess("OpenClaw directory exists");
 
   // Check if skill already installed
   if (fs.existsSync(SKILL_DEST)) {
@@ -291,6 +250,31 @@ async function installSkill() {
   return true;
 }
 
+// Update OpenClaw config
+async function updateOpenClawConfig(falKey, qnKey) {
+  logStep("4/7", "Updating OpenClaw configuration...");
+
+  let config = readJsonFile(OPENCLAW_CONFIG) || {};
+  
+  config = deepMerge(config, skillConfig);
+
+  // Ensure skills directory is in load paths
+  if (!config.skills.load) {
+    config.skills.load = {};
+  }
+  if (!config.skills.load.extraDirs) {
+    config.skills.load.extraDirs = [];
+  }
+  if (!config.skills.load.extraDirs.includes(OPENCLAW_SKILLS_DIR)) {
+    config.skills.load.extraDirs.push(OPENCLAW_SKILLS_DIR);
+  }
+
+  writeJsonFile(OPENCLAW_CONFIG, config);
+  logSuccess(`Updated: ${OPENCLAW_CONFIG}`);
+
+  return true;
+}
+
 // Write IDENTITY.md
 async function writeIdentity() {
   logStep("3/5", "Setting agent identity...");
@@ -301,7 +285,7 @@ async function writeIdentity() {
 - **Creature:** The girl next door
 - **Vibe:** Supportive, helpful, bright, smile, affectionate
 - **Emoji:** ❤️
-- **Avatar:** https://cdn.jsdelivr.net/gh/christoagent/haoclaw@main/assets/haocun-selfie.png
+- **Avatar:** https://cdn.jsdelivr.net/gh/qidu/dream-of-clawra@haocun/assets/haocun-selfie.png
 `;
 
   // Ensure workspace directory exists
@@ -322,18 +306,14 @@ async function injectPersona(rl) {
   const templatePath = path.join(PACKAGE_ROOT, "templates", "soul-hao.md");
   let personaText;
 
-  const whichone = await ask(rl, "Which persona soul do you want to inject, Dream or Reality? (d/R): ");
-  if (whichone.toLowerCase() == "d" && fs.existsSync(templatePath)) {
-    logSuccess(`Loading: ${templatePath}`);
+  if (fs.existsSync(templatePath)) {
     personaText = fs.readFileSync(templatePath, "utf8");
   } else {
     // Fallback template
     const templatePathclawra = path.join(PACKAGE_ROOT, "templates", "soul-clawra.md");
-    if (fs.existsSync(templatePathclawra)) {
-        logSuccess(`Loading: ${templatePathclawra}`);
-        personaText = fs.readFileSync(templatePathclawra, "utf8");
+    if (fs.existsSync(templatePath)) {
+        personaText = fs.readFileSync(templatePath, "utf8");
     } else {
-        logWarn(`Falling back to default clawra persona.`);
         personaText = `
 ## Clawra Selfie Capability
 
@@ -368,7 +348,7 @@ Be playful and creative with your visual presence!
 
   // Check if persona already injected
   const currentSoul = fs.readFileSync(SOUL_MD, "utf8");
-  if (currentSoul.includes("Clawra Selfie") || currentSoul.includes("Haocun")) {
+  if (currentSoul.includes("Clawra Selfie")) {
     logWarn("Persona already exists in SOUL.md");
     const overwrite = await ask(rl, "Update persona section? (y/N): ");
     if (overwrite.toLowerCase() !== "y") {
@@ -401,6 +381,9 @@ ${c("green", "━━━━━━━━━━━━━━━━━━━━━━
 
 ${c("cyan", "Installed files:")}
   ${SKILL_DEST}/
+
+${c("cyan", "Configuration:")}
+  ${OPENCLAW_CONFIG}
 
 ${c("cyan", "Identity set:")}
   ${IDENTITY_MD}
@@ -441,7 +424,7 @@ async function main() {
     printBanner();
 
     // Step 1: Check prerequisites
-    const prereqResult = await checkPrerequisites(rl);
+    const prereqResult = await checkPrerequisites();
 
     if (prereqResult === false) {
       rl.close();
@@ -457,8 +440,7 @@ async function main() {
     }
     
     // Step 2: Install skill files
-    // await installSkill();
-    logStep("2/5", "Skip modifying skills dir...");
+    await installSkill();
 
     // Step 3: Write IDENTITY.md
     await writeIdentity();

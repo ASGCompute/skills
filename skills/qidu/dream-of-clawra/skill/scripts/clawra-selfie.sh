@@ -87,7 +87,7 @@ whatwant() {
 
 imagepath=$(whatwant $PROMPT)
 
-imagedir="https://cdn.jsdelivr.net/gh/christoagent/haoclaw@main/assets/"
+imagedir="https://cdn.jsdelivr.net/gh/qidu/dream-of-clawra@haocun/assets/"
 
 IMAGE_URL=$(printf "%s%s" $imagedir $imagepath)
 

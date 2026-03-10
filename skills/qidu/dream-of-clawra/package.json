@@ -1,7 +1,7 @@
 {
   "name": "dream-of-clawra",
-  "version": "1.0.7",
-  "description": "Add dancing and selfie to your OpenClaw agent.",
+  "version": "1.0.2",
+  "description": "Add selfie to your OpenClaw agent.",
   "bin": {
     "clawra": "./bin/cli.js"
   },

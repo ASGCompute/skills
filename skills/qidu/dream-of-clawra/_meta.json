@@ -1,13 +1,18 @@
 {
   "owner": "qidu",
   "slug": "dream-of-clawra",
-  "displayName": "Dream of Clawra",
+  "displayName": "Dream Of Clawra",
   "latest": {
-    "version": "1.0.7",
-    "publishedAt": 1772803260805,
-    "commit": "https://github.com/openclaw/skills/commit/2691fc32f91ba436ac4f2d899121f6b1cd652532"
+    "version": "1.0.9",
+    "publishedAt": 1773133991013,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.7",
+      "publishedAt": 1772803260805,
+      "commit": "https://github.com/openclaw/skills/commit/2691fc32f91ba436ac4f2d899121f6b1cd652532"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1772686892163,
