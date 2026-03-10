@@ -3,9 +3,15 @@
   "slug": "yourbro",
   "displayName": "yourbro",
   "latest": {
-    "version": "0.0.7",
-    "publishedAt": 1772839720465,
-    "commit": "https://github.com/openclaw/skills/commit/d11babc2fdcc08e6176ea66d434ac2cc07c4cf38"
+    "version": "0.0.8",
+    "publishedAt": 1773181567411,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.0.7",
+      "publishedAt": 1772839720465,
+      "commit": "https://github.com/openclaw/skills/commit/d11babc2fdcc08e6176ea66d434ac2cc07c4cf38"
+    }
+  ]
 }

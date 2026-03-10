@@ -40,7 +40,7 @@ Publish multi-file web pages to yourbro.ai with end-to-end encryption. Your Claw
 ## How It Works
 
 ```
-ClawdBot writes files to /data/yourbro/pages/{slug}/ -> page is live immediately -> visitor loads page -> browser fetches E2E encrypted bundle from agent via relay -> decrypts -> Service Worker caches assets -> rendered in sandboxed iframe
+ClawdBot writes files to /data/yourbro/pages/{slug}/ -> page is live immediately -> visitor loads page -> browser fetches E2E encrypted bundle from agent via relay -> decrypts -> rendered in sandboxed iframe
 ```
 
 Your agent (yourbro-agent) runs on your machine and serves pages from local directories. yourbro.ai is a blind encrypted relay — it never stores, sees, or serves your content. All page bundles are encrypted with X25519 + AES-256-GCM before traversing the relay. Pages only work when your agent is online. Editing files on disk takes effect immediately.
@@ -101,7 +101,7 @@ Ask your ClawdBot to publish a page. It will:
 1. Create the page directory: `mkdir -p /data/yourbro/pages/{slug}/`
 2. Write `index.html` (required) and any other files (JS, CSS, etc.)
 3. Optionally write `page.json` with `{"title": "My Page", "public": false}` for a custom title and visibility control
-4. The page goes live at `https://yourbro.ai/p/USERNAME/SLUG`
+4. The page goes live at `https://yourbro.ai/p/USERNAME/SLUG` (or `https://CUSTOM_DOMAIN/SLUG` if configured)
 
 To update a page, just edit the files — changes are live immediately. To delete a page, remove the directory. No API calls needed.
 
@@ -123,7 +123,7 @@ echo '{"title": "My Portfolio", "public": false}' > /data/yourbro/pages/my-page/
 
 If `page.json` is missing or has no `"public"` field, the page defaults to **private**.
 
-Public pages are served in plaintext (no E2E encryption) and do not have access to page storage. The agent must still be online to serve public pages.
+All pages (public and private) are served through E2E encryption — anonymous visitors generate ephemeral X25519 keys. Public pages do not have access to page storage. The agent must still be online to serve public pages.
 
 ## File Locations
 
@@ -143,7 +143,7 @@ The agent binary is a single static executable. No runtime dependencies. OpenCla
 |---|---|---|---|
 | `YOURBRO_TOKEN` | Yes | -- | API token from yourbro.ai dashboard (used by both ClawdBot and the agent) |
 | `YOURBRO_SERVER_URL` | Yes | -- | yourbro API server URL (e.g., `https://api.yourbro.ai`) |
-| `SQLITE_PATH` | No | `~/.yourbro/agent.db` | SQLite database path |
+| `YOURBRO_SQLITE_PATH` | No | `~/.yourbro/agent.db` | SQLite database path |
 
 Two env vars (`YOURBRO_TOKEN` + `YOURBRO_SERVER_URL`) are all you need.
 
@@ -195,6 +195,7 @@ When the user asks you to publish a page or create a web page on yourbro:
    ```
 
 5. **Share the URL**: `https://yourbro.ai/p/USERNAME/my-page`
+   If the user has a custom domain configured (check via `GET /api/custom-domains`), also share: `https://CUSTOM_DOMAIN/my-page`
 
 ## Examples
 
@@ -208,7 +209,7 @@ EOF
 echo '{"title": "Hello World"}' > /data/yourbro/pages/hello/page.json
 ```
 
-Page is live at: `https://yourbro.ai/p/USERNAME/hello`
+Page is live at: `https://yourbro.ai/p/USERNAME/hello` (or `https://CUSTOM_DOMAIN/hello` if configured)
 
 ### Multi-file page with JS and CSS
 
@@ -251,18 +252,9 @@ EOF
 rm -rf /data/yourbro/pages/hello/
 ```
 
-### List pages (via relay)
+### List pages
 
-```bash
-curl -X POST "https://api.yourbro.ai/api/relay/$AGENT_ID" \
-  -H "Authorization: Bearer $YOURBRO_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "id": "'"$(uuidgen)"'",
-    "method": "GET",
-    "path": "/api/pages"
-  }'
-```
+Pages are listed via E2E encrypted relay from the dashboard. All relay requests must be encrypted (X25519 ECDH + AES-256-GCM). There is no cleartext relay path. The dashboard handles encryption automatically after pairing.
 
 ## Page Storage (data persistence)
 
@@ -327,12 +319,30 @@ window.parent.postMessage({
 
 All storage is scoped to the page slug and E2E encrypted through the relay. Your agent must be online for storage operations to work.
 
+## Custom Domains
+
+Users can serve pages from their own domain instead of `yourbro.ai/p/USERNAME/slug`. Custom domains use the URL format `https://CUSTOM_DOMAIN/slug` (no `/p/` prefix, username is implicit).
+
+To check if the user has custom domains configured:
+
+```bash
+curl https://api.yourbro.ai/api/custom-domains \
+  -H "Authorization: Bearer $YOURBRO_TOKEN"
+```
+
+Response is an array of domains. Each has a `domain` and `default_slug` field. When sharing page links, prefer the custom domain URL if one is configured and verified (`"verified": true`):
+- Default: `https://yourbro.ai/p/USERNAME/my-page`
+- Custom domain: `https://pages.example.com/my-page`
+
+Custom domains are set up by the user in the yourbro.ai dashboard (DNS CNAME + TXT verification). The agent does not need any configuration changes — custom domains use the same E2E encrypted relay.
+
 ## Security Model
 
 yourbro uses zero-trust architecture:
 
-- **E2E encrypted delivery**: Page bundles are encrypted with X25519 ECDH + AES-256-GCM. The relay server passes through opaque ciphertext it cannot read.
+- **E2E encrypted delivery**: All page traffic (public and private) is encrypted with X25519 ECDH + AES-256-GCM. The relay server passes through opaque ciphertext it cannot read. Anonymous visitors generate ephemeral X25519 keys; paired users use persistent keys stored in IndexedDB.
 - **Zero-knowledge server**: yourbro.ai never stores, sees, or serves your page content. It's a blind relay.
 - **X25519 keypairs**: Generated locally. Private keys never leave your device. Public keys are exchanged during pairing for E2E encryption.
+- **Pairing security**: Pairing requests are E2E encrypted using the agent's X25519 public key (available from the agent list API before pairing). The relay also verifies the requesting user owns the agent. A stolen pairing code is useless to other users. Codes are one-time use, expire in 5 minutes, and are rate-limited to 5 attempts.
 - **Data isolation**: Each agent has its own SQLite database. All content lives on your machine.
 - **Agent must be online**: Pages only work when your agent is connected. No stale data, no server-side caching.
