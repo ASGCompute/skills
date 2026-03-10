@@ -1,6 +1,8 @@
 /**
  * Cross-platform secure token storage using AES-256-CBC encryption.
- * Compatible with the existing OpenClaw skill's keychain.mjs.
+ * Key derivation: SHA-256(random-salt + hostname + username).
+ * The random salt is generated once and stored alongside the token,
+ * making the key unpredictable even if hostname/username are known.
  */
 
 import {
@@ -20,12 +22,26 @@ import { homedir } from "os";
 import { join, dirname } from "path";
 import os from "os";
 
-const TOKEN_FILE = join(homedir(), ".openclaw", ".picsee_token");
+const TOKEN_DIR = join(homedir(), ".openclaw");
+const TOKEN_FILE = join(TOKEN_DIR, ".picsee_token");
+const SALT_FILE = join(TOKEN_DIR, ".picsee_salt");
 
-/** Generate machine-specific encryption key (hostname + username → SHA-256). */
+/** Get or create a random salt for key derivation. */
+function getSalt(): Buffer {
+  if (existsSync(SALT_FILE)) {
+    return Buffer.from(readFileSync(SALT_FILE, "utf8").trim(), "hex");
+  }
+  const salt = randomBytes(32);
+  if (!existsSync(TOKEN_DIR)) mkdirSync(TOKEN_DIR, { recursive: true });
+  writeFileSync(SALT_FILE, salt.toString("hex"), { mode: 0o600 });
+  return salt;
+}
+
+/** Generate encryption key: SHA-256(salt + hostname + username). */
 function getMachineKey(): Buffer {
+  const salt = getSalt();
   const identifier = `${os.hostname()}-${os.userInfo().username}`;
-  return createHash("sha256").update(identifier).digest();
+  return createHash("sha256").update(Buffer.concat([salt, Buffer.from(identifier)])).digest();
 }
 
 function encryptToken(token: string): string {
@@ -70,6 +86,7 @@ export function getToken(): string | null {
 export function deleteToken(): boolean {
   try {
     if (existsSync(TOKEN_FILE)) unlinkSync(TOKEN_FILE);
+    if (existsSync(SALT_FILE)) unlinkSync(SALT_FILE);
     return true;
   } catch {
     return false;

@@ -1,13 +1,18 @@
 {
   "owner": "picseeinc",
   "slug": "picsee-short-link",
-  "displayName": "Skill for PicSee URL Shortener",
+  "displayName": "Picsee Short Link",
   "latest": {
-    "version": "2.0.0",
-    "publishedAt": 1772931612825,
-    "commit": "https://github.com/openclaw/skills/commit/1850ed7f629bd04c4f3a6859257df98bd033eb2a"
+    "version": "2.0.1",
+    "publishedAt": 1772972914735,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.0.0",
+      "publishedAt": 1772931612825,
+      "commit": "https://github.com/openclaw/skills/commit/1850ed7f629bd04c4f3a6859257df98bd033eb2a"
+    },
     {
       "version": "1.3.1",
       "publishedAt": 1772798109171,

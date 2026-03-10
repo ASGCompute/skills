@@ -5,11 +5,11 @@ license: MIT
 compatibility: Requires Node.js >= 18. Network access to api.pics.ee, chrome-ext.picsee.tw, api.qrserver.com, quickchart.io.
 metadata:
   author: picsee
-  version: "2.0.0"
+  version: "2.0.1"
   emoji: "🔗"
   openclaw-configPaths: "skills/picsee-short-link/config.json"
   openclaw-requires: "node"
-  openclaw-writesPaths: "skills/picsee-short-link/config.json, ~/.openclaw/.picsee_token, /tmp/*.png"
+  openclaw-writesPaths: "skills/picsee-short-link/config.json, ~/.openclaw/.picsee_token, ~/.openclaw/.picsee_salt, skills/picsee-short-link/tmp/*.png"
 ---
 
 # PicSee Short Link
@@ -147,8 +147,8 @@ Auto-detected: if encrypted token exists at `~/.openclaw/.picsee_token`, authent
 ## Security
 
 - **Token encryption**: AES-256-CBC, IV stored alongside ciphertext
-- **Key derivation**: `SHA-256(hostname + "-" + username)` — machine-specific
-- **File permissions**: `0600` on token file
+- **Key derivation**: `SHA-256(random-salt + hostname + "-" + username)` — the 32-byte random salt is generated once and stored at `~/.openclaw/.picsee_salt` (mode `0600`), making the key unpredictable even if hostname/username are known
+- **File permissions**: `0600` on both token and salt files
 
 ---
 
@@ -159,17 +159,19 @@ Auto-detected: if encrypted token exists at `~/.openclaw/.picsee_token`, authent
 After `picsee qr`, download and send the image:
 
 ```bash
-curl -s -o /tmp/<ENCODE_ID>_qr.png "<originalQrUrl>"
+mkdir -p ~/.openclaw/workspace/skills/picsee-short-link/tmp
+curl -s -o ~/.openclaw/workspace/skills/picsee-short-link/tmp/<ENCODE_ID>_qr.png "<originalQrUrl>"
 ```
 
-Send via `message` tool with `filePath: "/tmp/<ENCODE_ID>_qr.png"`.
+Send via `message` tool with `filePath: "~/.openclaw/workspace/skills/picsee-short-link/tmp/<ENCODE_ID>_qr.png"`.
 
 ### Download Chart as Image
 
 After `picsee chart`, download and send the image:
 
 ```bash
-curl -s -o /tmp/<ENCODE_ID>_chart.png "<originalChartUrl>"
+mkdir -p ~/.openclaw/workspace/skills/picsee-short-link/tmp
+curl -s -o ~/.openclaw/workspace/skills/picsee-short-link/tmp/<ENCODE_ID>_chart.png "<originalChartUrl>"
 ```
 
-Send via `message` tool with `filePath: "/tmp/<ENCODE_ID>_chart.png"`.
+Send via `message` tool with `filePath: "~/.openclaw/workspace/skills/picsee-short-link/tmp/<ENCODE_ID>_chart.png"`.
