@@ -108,17 +108,17 @@ Status values for polling: `starting` → `processing` → `completed`/`succeede
 ### Image Generation
 
 ```bash
-# 提交任务
+# Submit task
 curl -s -X POST "https://api.atlascloud.ai/api/v1/model/generateImage" \
   -H "Authorization: Bearer $ATLASCLOUD_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model": "bytedance/seedream-v5.0-lite", "prompt": "A cherry blossom garden", "size": "2048*2048"}'
-# 返回 {"code": 200, "data": {"id": "prediction_xxx"}}
+# Returns {"code": 200, "data": {"id": "prediction_xxx"}}
 
-# 轮询结果（每 3 秒）
+# Poll result (every 3 seconds)
 curl -s "https://api.atlascloud.ai/api/v1/model/prediction/{prediction_id}" \
   -H "Authorization: Bearer $ATLASCLOUD_API_KEY"
-# 完成后返回 {"data": {"status": "completed", "outputs": ["https://cdn..."]}}
+# When done: {"data": {"status": "completed", "outputs": ["https://cdn..."]}}
 ```
 
 ### Video Generation
@@ -128,7 +128,7 @@ curl -s -X POST "https://api.atlascloud.ai/api/v1/model/generateVideo" \
   -H "Authorization: Bearer $ATLASCLOUD_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model": "kwaivgi/kling-v3.0-std/text-to-video", "prompt": "A rocket launching", "duration": 5, "aspect_ratio": "16:9"}'
-# 轮询同上，视频通常需要 1-5 分钟
+# Same polling as above, videos typically take 1-5 minutes
 ```
 
 ### LLM Chat (OpenAI SDK)

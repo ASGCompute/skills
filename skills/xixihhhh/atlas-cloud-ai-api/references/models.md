@@ -97,17 +97,17 @@ Each model has a `schema` field pointing to an OpenAPI JSON file describing all 
 ```python
 import requests
 
-# 获取公开模型列表
+# Fetch public model list
 models = requests.get("https://console.atlascloud.ai/api/v1/models").json()["data"]
 public_models = [m for m in models if m.get("display_console") == True]
 
-# 查找特定模型
+# Find a specific model
 model = next(m for m in public_models if m["model"] == "bytedance/seedream-v5.0-lite")
 
-# 获取参数 schema
+# Fetch parameter schema
 if model.get("schema"):
     schema = requests.get(model["schema"]).json()
-    # schema["components"]["schemas"]["Input"]["properties"] 包含所有可用参数
+    # schema["components"]["schemas"]["Input"]["properties"] contains all available parameters
 ```
 
 ---

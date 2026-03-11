@@ -3,9 +3,15 @@
   "slug": "atlas-cloud-ai-api",
   "displayName": "Atlas Cloud — AI Image, Video & LLM Generation API",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1773053090064,
-    "commit": "https://github.com/openclaw/skills/commit/dddb558da8a6d0ece17435b0c4f6d2ecdb3a92da"
+    "version": "1.0.5",
+    "publishedAt": 1773053451562,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1773053090064,
+      "commit": "https://github.com/openclaw/skills/commit/dddb558da8a6d0ece17435b0c4f6d2ecdb3a92da"
+    }
+  ]
 }

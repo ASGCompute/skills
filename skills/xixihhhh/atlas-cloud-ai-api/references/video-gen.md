@@ -49,17 +49,17 @@ HEADERS = {
 
 def generate_video(model: str, prompt: str, **kwargs) -> str:
     """
-    生成视频并返回输出 URL。
+    Generate a video and return the output URL.
 
     Args:
-        model: 模型 ID，如 "kwaivgi/kling-v3.0-std/text-to-video"
-        prompt: 视频描述文本
-        **kwargs: 额外参数（duration, aspect_ratio, image_url 等）
+        model: Model ID, e.g. "kwaivgi/kling-v3.0-std/text-to-video"
+        prompt: Text description of the video
+        **kwargs: Extra parameters (duration, aspect_ratio, image_url, etc.)
 
     Returns:
-        生成视频的 URL
+        URL of the generated video
     """
-    # 第一步：提交生成任务
+    # Step 1: Submit generation task
     payload = {"model": model, "prompt": prompt, **kwargs}
     resp = requests.post(f"{BASE_URL}/model/generateVideo", json=payload, headers=HEADERS, timeout=50)
     resp.raise_for_status()
@@ -68,7 +68,7 @@ def generate_video(model: str, prompt: str, **kwargs) -> str:
     prediction_id = data["data"]["id"]
     print(f"Task submitted. Prediction ID: {prediction_id}")
 
-    # 第二步：轮询结果（视频通常需要更长时间）
+    # Step 2: Poll for result (videos typically take longer)
     for _ in range(200):
         time.sleep(5)
         result = requests.get(f"{BASE_URL}/model/prediction/{prediction_id}", headers=HEADERS, timeout=30)
@@ -91,7 +91,7 @@ def generate_video(model: str, prompt: str, **kwargs) -> str:
     raise TimeoutError("Generation timed out")
 
 
-# 文本生成视频
+# Text-to-video example
 if __name__ == "__main__":
     url = generate_video(
         model="kwaivgi/kling-v3.0-std/text-to-video",
@@ -133,7 +133,7 @@ async function generateVideo(
   prompt: string,
   extraParams: Record<string, unknown> = {}
 ): Promise<string> {
-  // 第一步：提交生成任务
+  // Step 1: Submit generation task
   const submitResp = await fetch(`${BASE_URL}/model/generateVideo`, {
     method: 'POST',
     headers,
@@ -148,7 +148,7 @@ async function generateVideo(
   const predictionId = submitData.data.id;
   console.log(`Task submitted. Prediction ID: ${predictionId}`);
 
-  // 第二步：轮询结果（视频通常需要 1-5 分钟）
+  // Step 2: Poll for result (videos typically take 1-5 minutes)
   for (let i = 0; i < 200; i++) {
     await new Promise((r) => setTimeout(r, 5000));
 
@@ -175,14 +175,14 @@ async function generateVideo(
   throw new Error('Generation timed out');
 }
 
-// 文本生成视频
+// Text-to-video example
 const videoUrl = await generateVideo(
   'kwaivgi/kling-v3.0-std/text-to-video',
   'A rocket launching into space with dramatic clouds',
   { duration: 5, aspect_ratio: '16:9' }
 );
 
-// 图片生成视频
+// Image-to-video example
 const videoUrl2 = await generateVideo(
   'kwaivgi/kling-v3.0-std/image-to-video',
   'Camera slowly zooms in, petals gently falling',
@@ -245,5 +245,5 @@ PREDICTION_ID=$(curl -s -X POST "https://api.atlascloud.ai/api/v1/model/generate
   }' | jq -r '.data.id')
 
 echo "Prediction ID: $PREDICTION_ID"
-# ... 使用和上面相同的轮询逻辑
+# ... use the same polling logic as above
 ```

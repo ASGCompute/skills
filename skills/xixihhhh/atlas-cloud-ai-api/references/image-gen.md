@@ -53,17 +53,17 @@ HEADERS = {
 
 def generate_image(model: str, prompt: str, **kwargs) -> str:
     """
-    生成图片并返回输出 URL。
+    Generate an image and return the output URL.
 
     Args:
-        model: 模型 ID，如 "bytedance/seedream-v5.0-lite"
-        prompt: 图片描述文本
-        **kwargs: 模型特定参数（image_size, num_inference_steps 等）
+        model: Model ID, e.g. "bytedance/seedream-v5.0-lite"
+        prompt: Text description of the image
+        **kwargs: Model-specific parameters (image_size, num_inference_steps, etc.)
 
     Returns:
-        生成图片的 URL
+        URL of the generated image
     """
-    # 第一步：提交生成任务
+    # Step 1: Submit generation task
     payload = {"model": model, "prompt": prompt, **kwargs}
     resp = requests.post(f"{BASE_URL}/model/generateImage", json=payload, headers=HEADERS, timeout=50)
     resp.raise_for_status()
@@ -72,8 +72,8 @@ def generate_image(model: str, prompt: str, **kwargs) -> str:
     prediction_id = data["data"]["id"]
     print(f"Task submitted. Prediction ID: {prediction_id}")
 
-    # 第二步：轮询结果
-    for _ in range(200):  # 最长约 10 分钟
+    # Step 2: Poll for result
+    for _ in range(200):  # ~10 minutes max
         time.sleep(3)
         result = requests.get(f"{BASE_URL}/model/prediction/{prediction_id}", headers=HEADERS, timeout=30)
         result.raise_for_status()
@@ -95,7 +95,7 @@ def generate_image(model: str, prompt: str, **kwargs) -> str:
     raise TimeoutError("Generation timed out")
 
 
-# 文本生成图片
+# Text-to-image example
 if __name__ == "__main__":
     url = generate_image(
         model="bytedance/seedream-v5.0-lite",
@@ -108,7 +108,7 @@ if __name__ == "__main__":
 ### Image-to-Image / Image Editing (Python)
 
 ```python
-# 图片编辑模型使用示例
+# Image editing example
 url = generate_image(
     model="google/nano-banana-2/edit",
     prompt="Transform this into a watercolor painting",
@@ -142,7 +142,7 @@ async function generateImage(
   prompt: string,
   extraParams: Record<string, unknown> = {}
 ): Promise<string> {
-  // 第一步：提交生成任务
+  // Step 1: Submit generation task
   const submitResp = await fetch(`${BASE_URL}/model/generateImage`, {
     method: 'POST',
     headers,
@@ -157,7 +157,7 @@ async function generateImage(
   const predictionId = submitData.data.id;
   console.log(`Task submitted. Prediction ID: ${predictionId}`);
 
-  // 第二步：轮询结果
+  // Step 2: Poll for result
   for (let i = 0; i < 200; i++) {
     await new Promise((r) => setTimeout(r, 3000));
 
@@ -184,7 +184,7 @@ async function generateImage(
   throw new Error('Generation timed out');
 }
 
-// 使用示例
+// Usage example
 const imageUrl = await generateImage(
   'bytedance/seedream-v5.0-lite',
   'A serene Japanese garden with cherry blossoms',
@@ -198,7 +198,7 @@ console.log(`Image URL: ${imageUrl}`);
 ## cURL
 
 ```bash
-# 第一步：提交生成任务
+# Step 1: Submit generation task
 PREDICTION_ID=$(curl -s -X POST "https://api.atlascloud.ai/api/v1/model/generateImage" \
   -H "Authorization: Bearer $ATLASCLOUD_API_KEY" \
   -H "Content-Type: application/json" \
@@ -210,7 +210,7 @@ PREDICTION_ID=$(curl -s -X POST "https://api.atlascloud.ai/api/v1/model/generate
 
 echo "Prediction ID: $PREDICTION_ID"
 
-# 第二步：轮询结果
+# Step 2: Poll for result
 while true; do
   sleep 3
   RESULT=$(curl -s "https://api.atlascloud.ai/api/v1/model/prediction/$PREDICTION_ID" \

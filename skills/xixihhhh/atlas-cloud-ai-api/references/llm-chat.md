@@ -200,7 +200,7 @@ while (true) {
   const lines = text.split('\n').filter((line) => line.startsWith('data: '));
 
   for (const line of lines) {
-    const data = line.slice(6); // 去掉 "data: " 前缀
+    const data = line.slice(6); // Strip "data: " prefix
     if (data === '[DONE]') break;
 
     const parsed = JSON.parse(data);
