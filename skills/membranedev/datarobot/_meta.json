@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "datarobot",
+  "displayName": "Datarobot",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773190934000,
+    "commit": null
+  },
+  "history": []
+}
