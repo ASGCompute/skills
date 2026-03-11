@@ -1,0 +1,11 @@
+{
+  "owner": "aiot-f2e-team",
+  "slug": "aqara-open-api",
+  "displayName": "Aqara OpenAPI",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1773109547553,
+    "commit": null
+  },
+  "history": []
+}
