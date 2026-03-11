@@ -1,0 +1,11 @@
+{
+  "owner": "yipng05-max",
+  "slug": "cnki-advanced-search",
+  "displayName": "知网高级检索",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773211407875,
+    "commit": null
+  },
+  "history": []
+}
