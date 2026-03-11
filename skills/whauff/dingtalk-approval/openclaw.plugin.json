@@ -1,0 +1,24 @@
+{
+  "id": "dingtalk-approval",
+  "name": "DingTalk Approval Tools",
+  "description": "钉钉 OA 审批处理插件 - 支持查询待办和执行审批操作",
+  "version": "1.1.0",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "dingtalkUserId": {
+        "type": "string",
+        "description": "钉钉用户ID（用于执行审批）"
+      },
+      "appKey": {
+        "type": "string",
+        "description": "钉钉应用 AppKey"
+      },
+      "appSecret": {
+        "type": "string",
+        "description": "钉钉应用 AppSecret"
+      }
+    },
+    "required": ["dingtalkUserId", "appKey", "appSecret"]
+  }
+}

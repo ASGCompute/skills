@@ -1,0 +1,10 @@
+{
+    "name": "dingtalk-approval",
+    "version": "1.1.0",
+    "description": "钉钉 OA 审批处理插件 - 支持查询待办和执行审批操作",
+    "main": "index.js",
+    "keywords": ["dingtalk", "approval", "oa", "钉钉", "审批"],
+    "author": "Yang",
+    "license": "MIT",
+    "dependencies": {}
+}
