@@ -1,0 +1,11 @@
+{
+  "owner": "constx1337",
+  "slug": "arxiv-watch",
+  "displayName": "Arxiv Watcher",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773222372215,
+    "commit": null
+  },
+  "history": []
+}
