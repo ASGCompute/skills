@@ -1,0 +1,11 @@
+{
+  "owner": "hanbinsite",
+  "slug": "my-novel-writer",
+  "displayName": "小说创作",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773146974202,
+    "commit": null
+  },
+  "history": []
+}
