@@ -1,0 +1,11 @@
+{
+  "owner": "demonkit",
+  "slug": "cooking-recipe",
+  "displayName": "Cooking Recipe",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773055614388,
+    "commit": null
+  },
+  "history": []
+}
