@@ -1,0 +1,11 @@
+{
+  "owner": "jisuapi",
+  "slug": "stockindex",
+  "displayName": "上证股票指数 - Shanghai Stock Exchange Composite Index",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773202463674,
+    "commit": null
+  },
+  "history": []
+}
