@@ -3,9 +3,15 @@
   "slug": "mortgage",
   "displayName": "Mortgage",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772922960537,
-    "commit": "https://github.com/openclaw/skills/commit/cc9188b941bd6606172ac4072b58b5be525082a8"
+    "version": "2.1.0",
+    "publishedAt": 1773065755527,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772922960537,
+      "commit": "https://github.com/openclaw/skills/commit/cc9188b941bd6606172ac4072b58b5be525082a8"
+    }
+  ]
 }
