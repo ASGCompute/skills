@@ -59,6 +59,12 @@ Script path is usually `<workspace>/skills/uninstaller/scripts/` or `~/.openclaw
 # Preserve skills, logs, preferences (optional; reinstall without losing data)
 ./scripts/schedule-uninstall.sh --preserve "skills,logs,preferences"
 ./scripts/uninstall-oneshot.sh --preserve all
+
+# Skip backup (default: backup all before delete)
+./scripts/schedule-uninstall.sh --no-backup
+
+# Also remove ~/.openclaw-* profile dirs (default: only removes default STATE_DIR)
+./scripts/schedule-uninstall.sh --all-profiles
 ```
 
 ### View results
@@ -121,11 +127,14 @@ systemctl --user daemon-reload
 
 ## Notes
 
-- **Multiple profiles**: Each profile has its own dir `~/.openclaw-<profile>`; remove each
+- **Default backup**: Uninstall backs up all data (skills, logs, preferences, credentials) to `~/.openclaw-backup-YYYYMMDD-HHMMSS/` before delete. Use `--no-backup` to skip.
+- **Multiple profiles**: Only the default `~/.openclaw` is removed by default. Use `--all-profiles` to also remove `~/.openclaw-<profile>` dirs.
 - **Remote mode**: Run on the gateway host
 - **Source install**: Uninstall the service first, then remove the repo
 - **IM uninstall failed**: If schedule-uninstall errors (e.g. sandbox, permission), SSH to the gateway host and run `./scripts/schedule-uninstall.sh` or `./scripts/uninstall-oneshot.sh` manually
 - **Preserve data**: Use `--preserve "skills,logs,preferences"` or `--preserve all` (includes credentials). Backup goes to `~/.openclaw-backup-YYYYMMDD-HHMMSS/`
+- **Path safety**: `OPENCLAW_STATE_DIR` must be under `$HOME` and match `.openclaw` or `.openclaw-*`; invalid paths are rejected.
+
 
 ---
 

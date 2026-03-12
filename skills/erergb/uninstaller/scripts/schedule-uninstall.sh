@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 # schedule-uninstall.sh — Create launchd/systemd one-shot to run uninstall after delay.
 # Agent calls this; script returns immediately after scheduling.
-# Usage: schedule-uninstall.sh [--notify-email EMAIL] [--notify-ntfy TOPIC] [--preserve LIST]
-#   --preserve LIST: skills,logs,preferences,credentials or "all"
+# Usage: schedule-uninstall.sh [OPTIONS]
+#   --notify-email EMAIL   Send email when done
+#   --notify-ntfy TOPIC    Send ntfy notification when done
+#   --preserve LIST        Backup: skills,logs,preferences,credentials or "all"
+#   --no-backup            Skip backup
+#   --all-profiles         Also remove ~/.openclaw-* profile dirs
 # Requires: host=gateway (must run on host, not in sandbox)
 
 set -e
@@ -15,11 +19,15 @@ DELAY=15
 NOTIFY_EMAIL=""
 NOTIFY_NTFY=""
 PRESERVE=""
+NO_BACKUP=false
+ALL_PROFILES=false
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --notify-email) NOTIFY_EMAIL="$2"; shift 2 ;;
-    --notify-ntfy)  NOTIFY_NTFY="$2"; shift 2 ;;
-    --preserve)     PRESERVE="$2"; shift 2 ;;
+    --notify-email)  NOTIFY_EMAIL="$2"; shift 2 ;;
+    --notify-ntfy)   NOTIFY_NTFY="$2"; shift 2 ;;
+    --preserve)      PRESERVE="$2"; shift 2 ;;
+    --no-backup)     NO_BACKUP=true; shift ;;
+    --all-profiles)  ALL_PROFILES=true; shift ;;
     *) shift ;;
   esac
 done
@@ -28,6 +36,8 @@ EXTRA_ARGS=()
 [[ -n "$NOTIFY_EMAIL" ]] && EXTRA_ARGS+=(--notify-email "$NOTIFY_EMAIL")
 [[ -n "$NOTIFY_NTFY" ]] && EXTRA_ARGS+=(--notify-ntfy "$NOTIFY_NTFY")
 [[ -n "$PRESERVE" ]] && EXTRA_ARGS+=(--preserve "$PRESERVE")
+[[ "$NO_BACKUP" == "true" ]] && EXTRA_ARGS+=(--no-backup)
+[[ "$ALL_PROFILES" == "true" ]] && EXTRA_ARGS+=(--all-profiles)
 
 # Sandbox detection: if running in Docker, one-shot would be created inside container
 # and lost when gateway stops. Must run on host (host=gateway).
