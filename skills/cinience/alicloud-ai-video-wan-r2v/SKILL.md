@@ -1,18 +1,34 @@
 ---
 name: alicloud-ai-video-wan-r2v
-description: Generate reference-based videos with Alibaba Cloud Model Studio Wan R2V (wan2.6-r2v-flash). Use when creating multi-shot videos from reference video/image material, preserving character style, or documenting reference-to-video request/response flows.
+description: Generate reference-based videos with Alibaba Cloud Model Studio Wan R2V models (wan2.6-r2v-flash, wan2.6-r2v). Use when creating multi-shot videos from reference video/image material, preserving character style, or documenting reference-to-video request/response flows.
+version: 1.0.0
 ---
 
 Category: provider
 
 # Model Studio Wan R2V
 
+## Validation
+
+```bash
+mkdir -p output/alicloud-ai-video-wan-r2v
+python -m py_compile skills/ai/video/alicloud-ai-video-wan-r2v/scripts/prepare_r2v_request.py && echo "py_compile_ok" > output/alicloud-ai-video-wan-r2v/validate.txt
+```
+
+Pass criteria: command exits 0 and `output/alicloud-ai-video-wan-r2v/validate.txt` is generated.
+
+## Output And Evidence
+
+- Save reference input metadata, request payloads, and task outputs in `output/alicloud-ai-video-wan-r2v/`.
+- Keep at least one polling result snapshot.
+
 Use Wan R2V for reference-to-video generation. This is different from i2v (single image to video).
 
-## Critical model name
+## Critical model names
 
-Use ONLY this exact model string:
+Use one of these exact model strings:
 - `wan2.6-r2v-flash`
+- `wan2.6-r2v`
 
 ## Prerequisites
 
@@ -59,8 +75,15 @@ Prepare a normalized request JSON and validate response schema:
 
 ## Output location
 
-- Default output: `output/ai-video-wan-r2v/videos/`
+- Default output: `output/alicloud-ai-video-wan-r2v/videos/`
 - Override base dir with `OUTPUT_DIR`.
+
+## Workflow
+
+1) Confirm user intent, region, identifiers, and whether the operation is read-only or mutating.
+2) Run one minimal read-only query first to verify connectivity and permissions.
+3) Execute the target operation with explicit parameters and bounded scope.
+4) Verify results and save output/evidence files.
 
 ## References
 
