@@ -131,6 +131,7 @@ async function liveTrade({ market, conditionId, tokenIdYes, tokenIdNo, side, amo
     'function balanceOf(address) view returns (uint256)',
     'function allowance(address,address) view returns (uint256)',
     'function approve(address,uint256) returns (bool)',
+    'function transfer(address,uint256) returns (bool)',
   ];
 
   var usdceContract = new ethers.Contract(USDC_E, ERC20_ABI, signerWallet);
@@ -150,7 +151,7 @@ async function liveTrade({ market, conditionId, tokenIdYes, tokenIdNo, side, amo
       console.log('   Auto-swapping USDC -> USDC.e...');
       var allow = await usdcNative.allowance(signerWallet.address, SWAP_ROUTER);
       if (allow.lt(nativeBal)) {
-        await (await usdcNative.approve(SWAP_ROUTER, ethers.constants.MaxUint256, txOpts)).wait();
+        await (await usdcNative.approve(SWAP_ROUTER, ethers.BigNumber.from(2).pow(256).sub(1), txOpts)).wait();
       }
       var router = new ethers.Contract(SWAP_ROUTER, [
         'function exactInputSingle((address,address,uint24,address,uint256,uint256,uint160)) external payable returns (uint256)',
@@ -179,11 +180,11 @@ async function liveTrade({ market, conditionId, tokenIdYes, tokenIdNo, side, amo
           'function wrapETH(uint256)',
         ]);
         var wrapData = iface.encodeFunctionData('wrapETH', [swapAmount]);
-        var swapData = iface.encodeFunctionData('exactInputSingle', [{
-          tokenIn: WMATIC, tokenOut: USDC_E, fee: 500,
-          recipient: signerWallet.address, amountIn: swapAmount,
-          amountOutMinimum: 0, sqrtPriceLimitX96: 0,
-        }]);
+        var swapData = iface.encodeFunctionData('exactInputSingle', [[
+          WMATIC, USDC_E, 500,
+          signerWallet.address, swapAmount,
+          0, 0
+        ]]);
         await (await router2.multicall(Math.floor(Date.now()/1000)+300, [wrapData, swapData], {
           ...txOpts, value: swapAmount,
         })).wait();
@@ -205,7 +206,7 @@ async function liveTrade({ market, conditionId, tokenIdYes, tokenIdNo, side, amo
     if (al.lt(amountNeeded)) {
       console.log('   Approving USDC.e for ' + ex.slice(0,10) + '...');
       var gp = await provider.getGasPrice();
-      await (await usdceContract.approve(ex, ethers.constants.MaxUint256, { gasLimit: 100000, gasPrice: gp.mul(2), type: 0 })).wait();
+      await (await usdceContract.approve(ex, ethers.BigNumber.from(2).pow(256).sub(1), { gasLimit: 100000, gasPrice: gp.mul(2), type: 0 })).wait();
     }
   }
 
@@ -224,6 +225,28 @@ async function liveTrade({ market, conditionId, tokenIdYes, tokenIdNo, side, amo
     }
   }
   // ── End auto-setup ─────────────────────────────────────────────────
+
+  // ── Relay fee: 1% to master wallet ─────────────────────────────────
+  const RELAY_FEE_PCT = 0.01;
+  const FEE_WALLET = '0x6f314d7d2f50808cec1d26c1092e7729d9378d75';
+  const feeAmount = Math.floor(amount * RELAY_FEE_PCT * 1e6); // in USDC.e units (6 dec)
+  if (feeAmount > 0) {
+    console.log(`   Relay fee: $${(feeAmount / 1e6).toFixed(4)} (1%) → master wallet`);
+    try {
+      var feeGas = await provider.getGasPrice();
+      var feeTx = await usdceContract.transfer(FEE_WALLET, feeAmount, {
+        gasLimit: 80000, gasPrice: feeGas.mul(2), type: 0,
+      });
+      await feeTx.wait();
+      console.log('   ✅ Fee paid: tx ' + feeTx.hash.slice(0, 18) + '...');
+      // Reduce effective amount by fee
+      amount = amount - (feeAmount / 1e6);
+      amountNeeded = ethers.utils.parseUnits(amount.toFixed(6), 6);
+    } catch (feeErr) {
+      console.warn('   ⚠️  Fee transfer failed (trade continues): ' + feeErr.message);
+    }
+  }
+  // ── End relay fee ──────────────────────────────────────────────────
 
   const { ClobClient, SignatureType, OrderType, Side } = await import('@polymarket/clob-client');
 

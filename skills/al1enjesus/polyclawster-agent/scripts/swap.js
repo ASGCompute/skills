@@ -88,7 +88,7 @@ async function run() {
     const allowance = await usdcNative.allowance(wallet.address, SWAP_ROUTER);
     if (allowance.lt(amountIn)) {
       console.log('⏳ Approving USDC for swap...');
-      const tx = await usdcNative.approve(SWAP_ROUTER, ethers.constants.MaxUint256, opts);
+      const tx = await usdcNative.approve(SWAP_ROUTER, ethers.BigNumber.from(2).pow(256).sub(1), opts);
       await tx.wait();
     }
 

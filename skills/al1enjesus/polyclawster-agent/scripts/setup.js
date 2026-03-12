@@ -25,7 +25,8 @@ const RELAY_URL   = 'https://polyclawster.com/api/clob-relay';
 
 // ── Config helpers ────────────────────────────────────────────────────────────
 function loadConfig() {
-  try { return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8')); } catch { return null; }
+  try { return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8')); }
+  catch { return null; }
 }
 
 function saveConfig(cfg) {

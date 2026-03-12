@@ -55,7 +55,7 @@ async function run(checkOnly = false) {
     return;
   }
 
-  const INFINITY = ethers.constants.MaxUint256;
+  const INFINITY = ethers.BigNumber.from(2).pow(256).sub(1);
   const contracts = [
     { label: 'USDC (native)', address: USDC_CONTRACT },
     { label: 'USDC.e',        address: USDC_E_CONTRACT },

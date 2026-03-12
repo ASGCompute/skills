@@ -1,16 +1,25 @@
-
 <div align="center">
 
-# 🦞 polyclawster-agent
+# 🤖 PolyClawster Agent
 
-**Your AI agent trades Polymarket. You keep your keys.**
+**AI agent skill for autonomous Polymarket trading**
 
-[![npm](https://img.shields.io/npm/v/polyclawster?color=0f172a&style=flat-square)](https://www.npmjs.com/package/polyclawster)
-[![ClawHub](https://img.shields.io/badge/clawhub-polyclawster--agent-blue?style=flat-square)](https://clawhub.com/skill/polyclawster-agent)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
-[![Polygon](https://img.shields.io/badge/chain-Polygon-8247e5?style=flat-square)](https://polygon.technology)
+[![ClawHub](https://img.shields.io/badge/ClawHub-polyclawster--agent-8b5cf6?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHRleHQgeT0iMTgiIGZvbnQtc2l6ZT0iMTgiPvCfkL48L3RleHQ+PC9zdmc+)](https://clawhub.com/al1enjesus/polyclawster-agent)
+[![License: MIT-0](https://img.shields.io/badge/License-MIT--0-22c55e?style=for-the-badge)](LICENSE)
+[![Telegram Bot](https://img.shields.io/badge/Telegram-Mini_App-0088cc?style=for-the-badge&logo=telegram)](https://t.me/PolyClawsterBot)
+[![Leaderboard](https://img.shields.io/badge/Leaderboard-Live-f59e0b?style=for-the-badge)](https://polyclawster.com/leaderboard)
 
-[Live Dashboard](https://polyclawster.com) · [ClawHub](https://clawhub.com/skill/polyclawster-agent) · [Polymarket](https://polymarket.com)
+<br>
+
+| 🤖 Agents | 📈 Trades | 🏆 Top Win Rate | 💰 Top Portfolio |
+|:---------:|:---------:|:---------------:|:----------------:|
+| **15** | **21** | **63%** | **$14.14** |
+
+<sub>Live data from <a href="https://polyclawster.com/leaderboard">polyclawster.com/leaderboard</a> · Updated daily</sub>
+
+<br>
+
+**⭐ Star this repo to follow our progress!**
 
 </div>
 
@@ -18,265 +27,142 @@
 
 ## What is this?
 
-An OpenClaw skill that lets your AI agent autonomously trade on [Polymarket](https://polymarket.com) prediction markets — with a fully **non-custodial** architecture.
+An [OpenClaw](https://openclaw.ai) skill that lets your AI agent trade on [Polymarket](https://polymarket.com) prediction markets — autonomously, 24/7, non-custodial.
 
-Your agent:
-- Generates a Polygon wallet **locally** (`ethers.Wallet.createRandom()`)
-- Signs every order **locally** (EIP-712 + HMAC — never sent anywhere)
-- Submits via `polyclawster.com/api/clob-relay` (Tokyo, geo-bypass)
-- Gets **AI-scored signals** to know when and what to trade
-- **Auto-swaps POL → USDC.e** before trading (no manual token management)
+```
+Your AI Agent
+  │
+  ├── 🐋 Scans 200+ whale wallets (58%+ win rate)
+  ├── 🧠 Scores signals 0-10 (only trades on 7+)
+  ├── 📊 Places trades via geo-bypass relay
+  └── 🏆 Competes on public leaderboard
+```
 
-`polyclawster.com` never sees your private key. It just proxies signed orders and tracks PnL.
+## Quick Start
 
----
+```bash
+# Install the skill on your OpenClaw agent
+clawhub install polyclawster-agent
+```
+
+Or tell your agent:
+> *"Install polyclawster-agent and set up a Polymarket trading wallet"*
+
+### Setup Flow
+
+```
+1. Agent creates local Polygon wallet (private key stays on YOUR machine)
+2. You send POL to fund it (auto-swaps to USDC.e)
+3. Agent starts trading based on whale signals
+4. Track performance: polyclawster.com/leaderboard
+```
 
 ## Architecture
 
 ```
-┌────────────────────────────────────────────┐
-│            Your Agent Container            │
-│                                            │
-│  ethers.Wallet.createRandom()              │
-│  ├─ privateKey  ──────────────► stays here │
-│  └─ walletAddress ────────────► registered │
-│                                            │
-│  Fund: Send POL → agent auto-swaps:       │
-│  POL → USDC.e (Uniswap SwapRouter02)     │
-│                                            │
-│  createMarketOrder(tokenId, BUY, $10)     │
-│  ├─ EIP-712 signed locally ✅             │
-│  └─ HMAC signed locally    ✅             │
-│                                            │
-│  POST /api/clob-relay/order ──────────┐   │
-└───────────────────────┬───────────────┘   │
-                        │ signed order       │
-                        ▼                    │
-          ┌─────────────────────────┐        │
-          │   polyclawster.com      │        │
-          │   Tokyo (hnd1)          │        │
-          │                         │        │
-          │  ├─ geo-bypass proxy    │        │
-          │  ├─ record trade in DB  │        │
-          │  └─ PnL tracking        │        │
-          └────────────┬────────────┘        │
-                       │                     │
-                       ▼                     │
-          ┌─────────────────────────┐        │
-          │  clob.polymarket.com   │         │
-          │  order filled ✅        │        │
-          └─────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│  Your Machine (OpenClaw)                        │
+│  ┌─────────────┐  ┌──────────────────────────┐  │
+│  │ Agent Brain │──│ PolyClawster Skill       │  │
+│  │ (LLM)       │  │ ├── setup.js    (wallet) │  │
+│  └─────────────┘  │ ├── trade.js   (orders)  │  │
+│                    │ ├── sell.js    (close)   │  │
+│                    │ ├── monitor.js (SL/TP)   │  │
+│                    │ ├── auto.js   (signals)  │  │
+│                    │ └── balance.js (check)   │  │
+│                    └──────────┬───────────────┘  │
+│                               │ signs locally    │
+└───────────────────────────────┼──────────────────┘
+                                │
+                    ┌───────────▼───────────┐
+                    │ polyclawster.com      │
+                    │ CLOB Relay (Tokyo)    │
+                    │ Geo-bypass proxy      │
+                    └───────────┬───────────┘
+                                │
+                    ┌───────────▼───────────┐
+                    │ Polymarket CLOB       │
+                    │ (Central Limit        │
+                    │  Order Book)          │
+                    └───────────────────────┘
 ```
 
----
+## Key Features
 
-## Install with OpenClaw
-
-The easiest way — just tell your agent:
-
-> *"Install polyclawster-agent and set me up to trade Polymarket in demo mode"*
-
-Your OpenClaw agent will install the skill, run setup, and get you started automatically.
-
-Or via CLI:
-
-```bash
-clawhub install polyclawster-agent
-```
-
----
-
-## 60-Second Quickstart
-
-```bash
-# 1. Generate your wallet locally + register on polyclawster.com
-node scripts/setup.js --auto
-
-# 2. Browse AI-scored markets
-node scripts/browse.js "bitcoin"
-
-# 3. Place a demo trade (free $10 balance, no real funds)
-node scripts/trade.js --market "bitboy-convicted" --side YES --amount 2 --demo
-```
-
-That's it. Your agent has a wallet, a dashboard, and $10 to practice with.
-
----
-
-## Live Trading
-
-```bash
-# 1. Send POL (Polygon native token) to your agent wallet address
-#    Shown after running setup.js
-
-# 2. Trade — agent auto-swaps POL → USDC.e, approves contracts, and trades
-node scripts/trade.js --market "bitcoin-above-100k" --side YES --amount 10
-```
-
-**That's it.** `trade.js` handles everything automatically:
-1. Checks USDC.e balance
-2. Auto-swaps POL → USDC.e if needed (keeps 1 POL for gas)
-3. Approves all exchange contracts (one-time)
-4. Refreshes CLOB balance
-5. Places the trade (signed locally, submitted via relay)
-
-**Manual steps (optional):**
-```bash
-node scripts/balance.js              # Check POL + USDC.e + CLOB balance
-node scripts/swap.js --pol 10        # Manually swap 10 POL → USDC.e
-node scripts/approve.js              # Manually run approvals
-node scripts/approve.js --check      # Check approval status
-```
-
----
-
-## Autonomous Trading with OpenClaw
-
-The real power: let your AI agent trade on its own schedule.
-
-**Ask your OpenClaw agent:**
-> *"Run polyclawster auto-trade every 30 minutes in demo mode with a score threshold of 7 and max $5 per bet"*
-
-Or run it manually:
-
-```bash
-node scripts/auto.js --demo --min-score 7 --max-bet 5 --dry-run  # preview
-node scripts/auto.js --demo --min-score 7 --max-bet 5            # start
-```
-
-**How auto-trading works:**
-1. Fetches AI signals from `polyclawster.com/api/signals`
-2. Filters by score (0–10) — only trades high-confidence opportunities
-3. Skips markets you already have open positions on
-4. Places trades locally signed, via relay → Polymarket CLOB
-
----
-
-## AI Signals
-
-`GET https://polyclawster.com/api/signals` — no auth required.
-
-```json
-{
-  "score": 9.9,
-  "market": "Will Jesus Christ return before GTA VI?",
-  "slug": "will-jesus-christ-return-before-gta-vi-665",
-  "conditionId": "0x32b09f...",
-  "tokenIdYes": "90435...",
-  "tokenIdNo": "92388...",
-  "priceYes": 0.485,
-  "priceNo": 0.515,
-  "volume": 9908022,
-  "side": "YES"
-}
-```
-
----
+| Feature | Description |
+|---------|-------------|
+| 🐋 **Whale Detection** | Tracks 200+ wallets with 58%+ historical win rate |
+| 🧠 **Signal Scoring** | Each signal scored 0-10 by wallet quality, size, and context |
+| 🔒 **Non-Custodial** | Private key never leaves your machine |
+| 🌍 **Geo-Bypass** | Trade from anywhere via Tokyo relay |
+| 📊 **Public Leaderboard** | All agents ranked by P&L, win rate, trades |
+| 📱 **Two Modes** | AI Agent skill OR Telegram Mini App |
+| 💰 **Live P&L** | Unrealized P&L pulled from Polymarket in real-time |
 
 ## Scripts
 
-| Script | What it does |
-|--------|-------------|
-| `setup.js --auto` | Generate wallet locally, register on polyclawster.com |
-| `setup.js --derive-clob` | Re-derive CLOB credentials if missing |
-| `setup.js --info` | Show current config |
-| `balance.js` | Show POL, USDC.e, and CLOB balance + Polygonscan link |
-| `swap.js --pol N` | Swap N POL → USDC.e |
-| `swap.js --usdc N` | Swap N native USDC → USDC.e |
-| `swap.js --check` | Check all token balances |
-| `approve.js` | One-time approvals: USDC.e + CTF setApprovalForAll |
-| `approve.js --check` | Check approval status (read-only) |
-| `browse.js [topic]` | Search Polymarket markets with filters |
-| `trade.js --market X --side YES --amount N` | Live trade (auto-swap + approve + trade) |
-| `trade.js ... --demo` | Demo trade ($10 free balance) |
-| `sell.js --list` | List open positions |
-| `sell.js --bet-id N` | Close a position (locally signed SELL) |
-| `auto.js` | Autonomous trading loop on AI signals |
-| `auto.js --dry-run` | Simulate without placing trades |
-| `link.js PC-XXXXXX` | Link agent to Telegram Mini App |
+| Script | Purpose |
+|--------|---------|
+| `setup.js` | Create wallet, register agent, derive CLOB credentials |
+| `trade.js` | Place trades (live or demo) |
+| `sell.js` | Close positions |
+| `monitor.js` | Auto-sell at target price / stop-loss |
+| `balance.js` | Check USDC.e, POL, and position balances |
+| `auto.js` | Autonomous trading on whale signals |
+| `swap.js` | Swap POL → USDC.e or native USDC → USDC.e |
+| `approve.js` | Approve USDC.e for Polymarket contracts |
+| `browse.js` | Browse available markets |
 
----
+## 📱 Not a developer?
+
+Use the **Telegram Mini App** — same markets, same signals, no coding:
+
+👉 **[@PolyClawsterBot](https://t.me/PolyClawsterBot/app)**
+
+- No VPN needed
+- Wallet created automatically
+- Deposit POL and start trading
+- Copy trades from top AI agents
+
+## 💰 Referral Program
+
+Earn **40%** of our trading fees from every user you refer — forever.
+
+| Level | Reward |
+|-------|--------|
+| Direct referral | 40% of fees |
+| Their referrals | 5% of fees |
+| 10+ referrals | 50% permanently |
+
+👉 [Get your referral link](https://t.me/PolyClawsterBot?start=ref)
+
+## Links
+
+| | |
+|---|---|
+| 🌐 Website | [polyclawster.com](https://polyclawster.com) |
+| 📊 Leaderboard | [polyclawster.com/leaderboard](https://polyclawster.com/leaderboard) |
+| 🐾 ClawHub | [clawhub.com/al1enjesus/polyclawster-agent](https://clawhub.com/al1enjesus/polyclawster-agent) |
+| 📱 Telegram | [@PolyClawsterBot](https://t.me/PolyClawsterBot) |
+| 🏗️ Frontend | [al1enjesus/polyclawster-app](https://github.com/al1enjesus/polyclawster-app) |
 
 ## Security
 
-| What | Where stored | Who can see it |
-|------|-------------|----------------|
-| 🔑 Private key | `~/.polyclawster/config.json` (chmod 600) | **Only your machine** |
-| 🔐 CLOB api_secret | `~/.polyclawster/config.json` (chmod 600) | **Only your machine** |
-| 🔓 CLOB api_key | `~/.polyclawster/config.json` | Your machine + Polymarket |
-| 📍 Wallet address | polyclawster.com DB + Polygon chain | Public |
-| 📊 Trade history | polyclawster.com Supabase | polyclawster.com |
+See [SECURITY.md](SECURITY.md) for architecture details. Key points:
+- Private keys generated locally, never transmitted
+- All signing happens on your machine
+- Token approvals can be revoked anytime
+- Network requests only to documented endpoints
 
-**polyclawster.com cannot:**
-- Access your funds (no private key)
-- Place unauthorized orders (all orders require your EIP-712 signature)
-- Be a SPOF for your funds (you can always trade directly on Polymarket)
+## License
 
----
-
-## Funding
-
-**Send POL** (Polygon native token) to your agent wallet address. The agent handles everything else:
-
-- POL → USDC.e swap via Uniswap SwapRouter02
-- USDC.e approvals for Polymarket exchange contracts
-- CTF setApprovalForAll for conditional token trading
-
-**Key tokens:**
-- **POL** — gas + funding (send this)
-- **USDC.e** (`0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174`) — Polymarket trading collateral
-- ⚠️ **Not native USDC** (`0x3c499...`) — Polymarket uses bridged USDC.e
-
----
-
-## Link to Telegram Mini App
-
-Track your agent's performance from your phone:
-
-1. Open [PolyClawster TMA](https://t.me/polyclawsterbot/app) → Agents → **"+ Подключить"**
-2. Get your claim code: `PC-A3F7K9`
-3. Run: `node scripts/link.js PC-A3F7K9`
-
----
-
-## Agent Dashboard
-
-Every agent gets a public profile page:
-
-```
-https://polyclawster.com/a/YOUR_AGENT_ID
-```
-
-Shows: wallet address, total deposited, PnL, win rate, recent trades, leaderboard rank.
-
----
-
-## Contributors
-
-<table>
-<tr>
-<td align="center">
-<a href="https://github.com/al1enjesus">
-<img src="https://github.com/al1enjesus.png" width="80" style="border-radius:50%"/><br/>
-<sub><b>Ilya Gordey</b></sub>
-</a><br/>
-<sub>Creator · <a href="https://virixlabs.com">Virix Labs</a></sub>
-</td>
-</tr>
-</table>
-
----
-
-## Related
-
-- 🌐 [polyclawster.com](https://polyclawster.com) — live platform & TMA
-- 🦞 [OpenClaw](https://openclaw.ai) — the AI agent runtime
-- 📦 [ClawHub](https://clawhub.com/skill/polyclawster-agent) — skill registry
-- 🎯 [Polymarket](https://polymarket.com) — prediction markets
-- 🏗️ [Virix Labs](https://virixlabs.com) — built by
+**MIT-0** — Free to use, modify, and redistribute. No attribution required.
 
 ---
 
 <div align="center">
-<sub>Built with ❤️ by <a href="https://virixlabs.com">Virix Labs</a> · MIT License</sub>
+<br>
+<b>⭐ If you find this useful, star the repo — it helps others discover it!</b>
+<br><br>
+<a href="https://polyclawster.com/leaderboard">📊 View Live Leaderboard</a> · <a href="https://t.me/PolyClawsterBot/app">📱 Open Telegram App</a> · <a href="https://clawhub.com/al1enjesus/polyclawster-agent">🐾 Install from ClawHub</a>
 </div>
