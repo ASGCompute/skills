@@ -1,6 +1,7 @@
 ---
 name: alicloud-data-lake-dlf
-description: Manage Alibaba Cloud Data Lake Formation (DataLake) via OpenAPI/SDK. Use for listing resources, creating or updating configurations, querying status, and troubleshooting workflows for this product.
+description: Manage Alibaba Cloud Data Lake Formation (DataLake) via OpenAPI/SDK. Use whenever the user asks for DataLake catalog resource operations, configuration updates, status queries, or troubleshooting DataLake API workflows.
+version: 1.0.0
 ---
 
 Category: service
@@ -54,6 +55,29 @@ The script writes API inventory artifacts under the skill output directory.
 
 If you need to save responses or generated artifacts, write them under:
 `output/alicloud-data-lake-dlf/`
+
+## Validation
+
+```bash
+mkdir -p output/alicloud-data-lake-dlf
+for f in skills/data-lake/alicloud-data-lake-dlf/scripts/*.py; do
+  python3 -m py_compile "$f"
+done
+echo "py_compile_ok" > output/alicloud-data-lake-dlf/validate.txt
+```
+
+Pass criteria: command exits 0 and `output/alicloud-data-lake-dlf/validate.txt` is generated.
+
+## Output And Evidence
+
+- Save artifacts, command outputs, and API response summaries under `output/alicloud-data-lake-dlf/`.
+- Include key parameters (region/resource id/time range) in evidence files for reproducibility.
+
+## Prerequisites
+
+- Configure least-privilege Alibaba Cloud credentials before execution.
+- Prefer environment variables: `ALICLOUD_ACCESS_KEY_ID`, `ALICLOUD_ACCESS_KEY_SECRET`, optional `ALICLOUD_REGION_ID`.
+- If region is unclear, ask the user before running mutating operations.
 
 ## References
 
