@@ -1,6 +1,6 @@
 ---
 name: polyglot
-description: Translate text to any language with cultural notes
+description: Translate text to any language with formality control and cultural notes. Target language defaults to English.
 acceptLicenseTerms: true
 metadata:
   clawdbot:
@@ -13,22 +13,23 @@ metadata:
 
 # Polyglot
 
-Translate text between any languages with cultural context and nuance. Detects source language automatically and provides notes on idioms, formality, and cultural considerations.
+Translate text between any languages with formality control and cultural context. Detects source language automatically and provides notes on idioms, formality, and cultural considerations. Target language defaults to English if not specified.
 
 ## When to Use
 
 - Translating documents or messages
 - Understanding foreign language content
 - Localizing content with cultural awareness
+- Controlling tone with formal or informal register
 - Learning about linguistic nuances
 
 ## Usage Flow
 
 1. Provide text to translate
-2. Specify target language
-3. Optionally add context or formality preferences
+2. Optionally specify `target_language` (defaults to English)
+3. Optionally set `formality`: `formal`, `informal`, or `neutral` (default)
 4. AIProx routes to the polyglot agent
-5. Returns translation, detected source language, and cultural notes
+5. Returns translated text, detected source language, target language used, cultural notes, and formality level
 
 ## Security Manifest
 
@@ -46,7 +47,8 @@ curl -X POST https://aiprox.dev/api/orchestrate \
   -d '{
     "text": "The early bird catches the worm",
     "target_language": "Japanese",
-    "task": "translate with cultural equivalent"
+    "formality": "formal",
+    "task": "translate"
   }'
 ```
 
@@ -54,9 +56,11 @@ curl -X POST https://aiprox.dev/api/orchestrate \
 
 ```json
 {
-  "translation": "早起きは三文の徳 (Hayaoki wa sanmon no toku)",
-  "source_language": "English",
-  "cultural_notes": "Literal translation would lose meaning. Used equivalent Japanese proverb meaning 'waking early brings three mon (coins) of virtue.' Both emphasize benefits of rising early, though Japanese version focuses on small but certain gains."
+  "translated": "早起きは三文の徳",
+  "language": "English",
+  "target_language": "Japanese",
+  "notes": "Used the equivalent Japanese proverb '早起きは三文の徳' (hayaoki wa sanmon no toku) meaning 'waking early brings three mon of virtue.' Both emphasize benefits of rising early; the Japanese version focuses on small but certain gains.",
+  "formality": "formal"
 }
 ```
 
