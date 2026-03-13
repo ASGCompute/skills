@@ -3,9 +3,15 @@
   "slug": "org-health-diagnostic",
   "displayName": "Org Health Diagnostic",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772755271751,
-    "commit": "https://github.com/openclaw/skills/commit/6ba700867caf45f48641697d27d80a84442b9fbe"
+    "version": "2.1.1",
+    "publishedAt": 1773189346368,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772755271751,
+      "commit": "https://github.com/openclaw/skills/commit/6ba700867caf45f48641697d27d80a84442b9fbe"
+    }
+  ]
 }
