@@ -3,9 +3,15 @@
   "slug": "soarm-control",
   "displayName": "soarm-control",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772691782911,
-    "commit": "https://github.com/openclaw/skills/commit/50a8715488dc602d11974182a5db060e09295e5c"
+    "version": "1.0.1",
+    "publishedAt": 1773315743978,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772691782911,
+      "commit": "https://github.com/openclaw/skills/commit/50a8715488dc602d11974182a5db060e09295e5c"
+    }
+  ]
 }
