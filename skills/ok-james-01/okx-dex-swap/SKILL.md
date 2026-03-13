@@ -4,7 +4,7 @@ description: "This skill should be used when the user asks to 'swap tokens', 'tr
 license: Apache-2.0
 metadata:
   author: okx
-  version: "1.0.1"
+  version: "1.0.2"
   homepage: "https://web3.okx.com"
 ---
 
@@ -40,7 +40,7 @@ Every time before running any `onchainos` command, always follow these steps in 
    ```
 4. Create a `.env` file in the project root to override the default API credentials (optional — skip this for quick start):
    ```
-   OKX_API_KEY=
+   OKX_API_KEY=          # or OKX_ACCESS_KEY
    OKX_SECRET_KEY=
    OKX_PASSPHRASE=
    ```
@@ -195,7 +195,7 @@ This skill is the **execution endpoint** of most user trading flows. It almost a
 
 ```
 1. onchainos swap quote ...              → Get price and route
-2. onchainos swap approve ...            → Get approval calldata (if needed)
+2. onchainos swap approve ...            → Get approval calldata (skip for native tokens)
 3. User signs the approval transaction
 4. onchainos gateway broadcast ...       → Broadcast approval tx
 5. onchainos swap swap ...               → Get swap calldata
@@ -418,6 +418,7 @@ onchainos swap liquidity --chain xlayer
 - **Solana native SOL address**: Must use `11111111111111111111111111111111` (system program), NOT `So11111111111111111111111111111111111111112` (wSOL)
 - **Network error**: retry once, then prompt user to try again later
 - **Region restriction (error code 50125 or 80001)**: do NOT show the raw error code to the user. Instead, display a friendly message: `⚠️ Service is not available in your region. Please switch to a supported region and try again.`
+- **Native token approve (always skip)**: NEVER call `onchainos swap approve` for native token addresses (`0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee` on EVM, `11111111111111111111111111111111` on Solana). Native tokens do not use ERC-20 approval; calling approve with a native token address may return calldata that will **revert** on-chain and waste gas. Before calling approve, check: if `--token` (i.e. the `--from` token) is a native token address, skip this step entirely.
 
 ## Amount Display Rules
 
