@@ -1,6 +1,7 @@
 ---
 name: doc-summarize-pro
 description: "Enhanced document summarizer. Smart summary, bullet extraction, executive summary, chapter breakdown, multi-doc comparison, translate+summarize, action item extraction, timeline extraction. Use when summarizing documents, extracting key points, generating executive summaries, or pulling action items from meeting notes."
+runtime: python3
 ---
 
 # 📝 Summarize Pro — Enhanced Document Summarizer

@@ -1,11 +1,17 @@
 {
   "owner": "xueyetianya",
   "slug": "doc-summarize-pro",
-  "displayName": "doc-summarize-pro",
+  "displayName": "Doc Summarize Pro",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773191845624,
-    "commit": "https://github.com/openclaw/skills/commit/cf51e300de18f9b4508e751d761fccdf53bccbee"
+    "version": "1.0.2",
+    "publishedAt": 1773361100540,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773191845624,
+      "commit": "https://github.com/openclaw/skills/commit/cf51e300de18f9b4508e751d761fccdf53bccbee"
+    }
+  ]
 }
