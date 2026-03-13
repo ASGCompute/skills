@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-2fun.live 网盘资源搜索 — 分页版
+2fun.live 网盘资源搜索
 
 API: POST https://www.2fun.live/api/pan/search
     { kw: "关键词", res: "merge" }
@@ -8,27 +8,23 @@ API: POST https://www.2fun.live/api/pan/search
 限速: 10次/分钟（按IP）
 
 Usage:
-  python3 search.py "流浪地球2"                        # 第1页，全部网盘
-  python3 search.py "太平年" --cloud aliyun            # 只看阿里云盘
-  python3 search.py "太平年" --cloud aliyun quark      # 阿里+夸克
-  python3 search.py "太平年" --page 2                  # 第2页
-  python3 search.py "太平年" --page-size 5             # 每页5条
-  python3 search.py "流浪地球2" --json                  # 原始JSON
+  python3 search.py "流浪地球2"
+  python3 search.py "权游 第四季" --types aliyun quark
+  python3 search.py "流浪地球2" --json
 """
 
 import sys
 import json
+import os
 import urllib.request
 import urllib.parse
 import argparse
 
-API_URL = "https://www.2fun.live/api/pan/search"
+API_BASE_URL = os.getenv("API_URL", "https://www.2fun.live").rstrip("/")
+API_URL = f"{API_BASE_URL}/api/pan/search"
 
-DRIVE_PRIORITY = [
-    "aliyun", "quark", "115", "baidu", "pikpak",
-    "uc", "xunlei", "123", "tianyi", "mobile",
-    "magnet", "ed2k", "other",
-]
+# 云盘显示名称及优先级（用户友好度）
+DRIVE_PRIORITY = ["aliyun", "quark", "115", "baidu", "pikpak", "uc", "xunlei", "123", "tianyi", "mobile", "magnet", "ed2k", "other"]
 
 DRIVE_NAMES = {
     "115": "115网盘",
@@ -52,47 +48,35 @@ DRIVE_EMOJI = {
     "baidu": "🔵",
     "115": "🔷",
     "pikpak": "🟣",
-    "uc": "🟠",
-    "xunlei": "🌩️",
-    "123": "🟢",
-    "tianyi": "🔴",
-    "mobile": "📱",
     "magnet": "🧲",
     "ed2k": "🔗",
-    "other": "📁",
-}
-
-# 云盘筛选别名（支持中文和英文简写）
-DRIVE_ALIASES = {
-    "阿里": "aliyun", "阿里云盘": "aliyun", "aliyun": "aliyun",
-    "夸克": "quark", "夸克网盘": "quark", "quark": "quark",
-    "百度": "baidu", "百度网盘": "baidu", "baidu": "baidu",
-    "115": "115", "115网盘": "115",
-    "pikpak": "pikpak", "pik": "pikpak",
-    "uc": "uc", "UC": "uc",
-    "迅雷": "xunlei", "xunlei": "xunlei",
-    "123": "123", "123网盘": "123",
-    "天翼": "tianyi", "tianyi": "tianyi",
-    "移动": "mobile", "mobile": "mobile",
-    "磁力": "magnet", "magnet": "magnet",
-    "ed2k": "ed2k",
 }
 
 
-def resolve_cloud(name: str) -> str:
-    """将用户输入的云盘名称标准化"""
-    return DRIVE_ALIASES.get(name, name)
+def search(
+    keyword: str,
+    cloud_types: list = None,
+    refresh: bool = False,
+    page: int = 1,
+    page_size: int = None,
+) -> dict:
+    use_paged_results = bool(cloud_types) or page > 1 or page_size is not None
+    payload = {"kw": keyword, "res": "results" if use_paged_results else "merge"}
+    if cloud_types:
+        payload["cloud_types"] = cloud_types
+    if refresh:
+        payload["refresh"] = True
+    if use_paged_results:
+        payload["page"] = max(1, int(page or 1))
+        payload["page_size"] = max(1, min(100, int(page_size or 20)))
 
-
-def search(keyword: str) -> dict:
-    payload = {"kw": keyword, "res": "merge"}
     data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
         API_URL,
         data=data,
         headers={
             "Content-Type": "application/json",
-            "Referer": "https://www.2fun.live/",
+            "Referer": f"{API_BASE_URL}/",
             "User-Agent": "Mozilla/5.0",
         },
         method="POST",
@@ -101,153 +85,137 @@ def search(keyword: str) -> dict:
     return json.loads(resp.read().decode("utf-8"))
 
 
-def flatten_results(result: dict, cloud_filter: list = None) -> list:
-    """
-    将 merged_by_type 扁平化为有序列表。
-    按云盘优先级排列：同一云盘的结果连续分组，各云盘按 DRIVE_PRIORITY 排序。
-    """
-    by_type = result.get("merged_by_type", {})
-    flat = []
-
-    # 按优先级排列云盘
-    ordered = [t for t in DRIVE_PRIORITY if t in by_type and by_type[t]]
-    for t in by_type:
-        if t not in ordered and by_type[t]:
-            ordered.append(t)
-
-    # 应用云盘筛选
-    if cloud_filter:
-        ordered = [t for t in ordered if t in cloud_filter]
-
-    for drive_type in ordered:
-        for lnk in by_type.get(drive_type, []):
-            flat.append({
-                "drive_type": drive_type,
-                **lnk,
-            })
-
-    return flat
-
-
-def format_page(result: dict, page: int = 1, page_size: int = 8,
-                cloud_filter: list = None) -> str:
+def format_results(result: dict, max_per_type: int = 3) -> str:
     keyword = result.get("keyword", "")
-    total_all = result.get("total_count", 0)
+    total = result.get("total_count", 0)
     duration = result.get("search_duration", 0)
     from_cache = result.get("from_cache", False)
-
-    flat = flatten_results(result, cloud_filter)
-    total = len(flat)
+    cache_tag = "（缓存）" if from_cache else ""
 
     if total == 0:
-        if cloud_filter:
-            names = "、".join(DRIVE_NAMES.get(t, t) for t in cloud_filter)
-            return f"❌ 在 **{names}** 中未找到「{keyword}」的资源\n（全网共 {total_all} 条，可去掉筛选重试）"
         return f"❌ 未找到「{keyword}」的网盘资源"
 
-    total_pages = max(1, (total + page_size - 1) // page_size)
-    page = max(1, min(page, total_pages))
-    start = (page - 1) * page_size
-    end = min(start + page_size, total)
-    items = flat[start:end]
+    if "results" in result:
+        page = result.get("page", 1)
+        total_pages = result.get("total_pages", 1)
+        drive_counts = result.get("drive_counts", {})
+        results = result.get("results", [])
 
-    cache_tag = "缓存" if from_cache else f"{duration}ms"
+        lines = [f"🔍 **{keyword}** — 共 {total} 条结果，第 {page}/{max(total_pages, 1)} 页 ({duration}ms{cache_tag})\n"]
 
-    # 标题行
-    filter_tag = ""
-    if cloud_filter:
-        filter_tag = " | 筛选: " + "/".join(DRIVE_NAMES.get(t, t) for t in cloud_filter)
-    lines = [
-        f"🔍 **{keyword}**{filter_tag}",
-        f"第 **{page}/{total_pages}** 页 · 共 {total} 条（{cache_tag}）",
-        "─" * 28,
-    ]
+        grouped = {}
+        for item in results:
+            drive_type = item.get("type", "other")
+            grouped.setdefault(drive_type, []).append(item)
 
-    current_drive = None
-    for i, item in enumerate(items, start=start + 1):
-        drive_type = item.get("drive_type", "other")
-        emoji = DRIVE_EMOJI.get(drive_type, "📁")
-        drive_name = DRIVE_NAMES.get(drive_type, drive_type)
+        ordered_types = [t for t in DRIVE_PRIORITY if t in grouped and grouped[t]]
+        for t in grouped:
+            if t not in ordered_types and grouped[t]:
+                ordered_types.append(t)
 
-        # 换云盘时显示小标题
-        if drive_type != current_drive:
-            if current_drive is not None:
-                lines.append("")
-            lines.append(f"**{emoji} {drive_name}**")
-            current_drive = drive_type
+        for drive_type in ordered_types:
+            links = grouped[drive_type]
+            name = DRIVE_NAMES.get(drive_type, drive_type)
+            emoji = DRIVE_EMOJI.get(drive_type, "📁")
+            count_label = drive_counts.get(drive_type, len(links))
+            lines.append(f"**{emoji} {name}** ({count_label} 个，当前页 {len(links)} 条)")
 
-        url = item.get("url", "")
-        pwd = item.get("password", "")
-        note = item.get("note", "")
-        date = item.get("datetime", "")
-        restricted = item.get("_restricted", False)
+            for lnk in links[:max_per_type]:
+                url = lnk.get("url", "")
+                pwd = lnk.get("password", "")
+                note = lnk.get("note", "")
+                date = lnk.get("datetime", "")
+                restricted = lnk.get("_restricted", False)
 
-        if restricted:
-            lines.append(f"  {i}. 🔒 需登录查看完整链接")
+                if restricted:
+                    lines.append("  🔒 需登录查看完整链接")
+                    continue
+
+                line = f"  `{url}`"
+                if pwd:
+                    line += f"  密码: `{pwd}`"
+                if note:
+                    line += f"  {note}"
+                if date:
+                    line += f"  ({date[:10]})"
+                lines.append(line)
+            lines.append("")
+
+        if page < total_pages:
+            lines.append(f"➡️ 还有更多结果，继续翻到第 {page + 1} 页查看")
+            lines.append("")
+
+        lines.append(f"🌐 完整搜索：<{API_BASE_URL}/pan?kw={urllib.parse.quote(keyword)}>")
+        return "\n".join(lines)
+
+    by_type = result.get("merged_by_type", {})
+    lines = [f"🔍 **{keyword}** — 共 {total} 条结果 ({duration}ms{cache_tag})\n"]
+
+    # 按优先级排列云盘
+    ordered_types = [t for t in DRIVE_PRIORITY if t in by_type and by_type[t]]
+    # 加上优先级里没有的类型
+    for t in by_type:
+        if t not in ordered_types and by_type[t]:
+            ordered_types.append(t)
+
+    for drive_type in ordered_types:
+        links = by_type[drive_type]
+        if not links:
             continue
+        name = DRIVE_NAMES.get(drive_type, drive_type)
+        emoji = DRIVE_EMOJI.get(drive_type, "📁")
+        lines.append(f"**{emoji} {name}** ({len(links)} 个)")
+        for lnk in links[:max_per_type]:
+            url = lnk.get("url", "")
+            pwd = lnk.get("password", "")
+            note = lnk.get("note", "")
+            date = lnk.get("datetime", "")
+            restricted = lnk.get("_restricted", False)
 
-        line = f"  {i}. `{url}`"
-        extras = []
-        if pwd:
-            extras.append(f"密码:`{pwd}`")
-        if note:
-            extras.append(note[:40])
-        if date:
-            extras.append(date[:10])
-        if extras:
-            line += "  " + " · ".join(extras)
-        lines.append(line)
+            if restricted:
+                lines.append("  🔒 需登录查看完整链接")
+                continue
 
-    lines.append("")
-    lines.append("─" * 28)
+            line = f"  `{url}`"
+            if pwd:
+                line += f"  密码: `{pwd}`"
+            if note:
+                line += f"  {note}"
+            if date:
+                line += f"  ({date[:10]})"
+            lines.append(line)
 
-    # 翻页提示
-    nav = []
-    if page > 1:
-        nav.append(f"⬅️ 上一页：「第{page-1}页 {keyword}」")
-    if page < total_pages:
-        nav.append(f"➡️ 下一页：「第{page+1}页 {keyword}」")
-    if nav:
-        lines.extend(nav)
+        if len(links) > max_per_type:
+            lines.append(f"  … 还有 {len(links) - max_per_type} 个，去 2fun.live 查看全部")
+        lines.append("")
 
-    # 云盘筛选提示
-    available = [t for t in DRIVE_PRIORITY
-                 if t in (result.get("merged_by_type") or {}) and result["merged_by_type"][t]]
-    if available and not cloud_filter:
-        drive_hints = " · ".join(
-            f"{DRIVE_NAMES.get(t,t)}({len(result['merged_by_type'][t])})" for t in available
-        )
-        lines.append(f"📂 筛选云盘: {drive_hints}")
-        lines.append("  说「阿里 {关键词}」即可筛选")
-
-    q = urllib.parse.quote(keyword)
-    lines.append(f"🌐 <https://s.2fun.live/search?q={q}>")
-
+    lines.append(f"🌐 完整搜索：<{API_BASE_URL}/pan?kw={urllib.parse.quote(keyword)}>")
     return "\n".join(lines)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="2fun.live 网盘资源搜索（分页版）")
+    parser = argparse.ArgumentParser(description="2fun.live 网盘资源搜索")
     parser.add_argument("keyword", help="搜索关键词")
-    parser.add_argument("--cloud", nargs="+", default=None,
-                        help="筛选云盘类型（可多选）: aliyun quark baidu 115 magnet ...")
-    parser.add_argument("--page", type=int, default=1, help="页码（默认第1页）")
-    parser.add_argument("--page-size", type=int, default=8, help="每页条数（默认8）")
-    parser.add_argument("--json", dest="as_json", action="store_true", help="输出原始JSON")
+    parser.add_argument("--types", nargs="+", help="限定云盘类型 (aliyun/quark/baidu/...)")
+    parser.add_argument("--page", type=int, default=1, help="结果页码（默认1）")
+    parser.add_argument("--page-size", type=int, help="每页结果数（默认20，启用服务端分页）")
+    parser.add_argument("--max", type=int, default=3, help="每种类型最多显示条数")
+    parser.add_argument("--refresh", action="store_true", help="强制刷新缓存")
+    parser.add_argument("--json", dest="as_json", action="store_true", help="输出原始 JSON")
     args = parser.parse_args()
 
-    # 标准化云盘名称
-    cloud_filter = None
-    if args.cloud:
-        cloud_filter = [resolve_cloud(c) for c in args.cloud]
-
     try:
-        result = search(args.keyword)
+        result = search(
+            args.keyword,
+            cloud_types=args.types,
+            refresh=args.refresh,
+            page=args.page,
+            page_size=args.page_size,
+        )
         if args.as_json:
             print(json.dumps(result, ensure_ascii=False, indent=2))
         else:
-            print(format_page(result, page=args.page,
-                              page_size=args.page_size, cloud_filter=cloud_filter))
+            print(format_results(result, max_per_type=args.max))
     except urllib.error.HTTPError as e:
         body = e.read().decode()
         if "RATE_LIMIT" in body:

@@ -1,11 +1,17 @@
 {
   "owner": "xucheng",
   "slug": "2fun-pansou",
-  "displayName": "2fun 网盘搜索",
+  "displayName": "2fun Pansou",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1772851036120,
-    "commit": "https://github.com/openclaw/skills/commit/27ff3bcb1e408725c17b6c6a9e95c10e92b2683b"
+    "version": "2026.3.13",
+    "publishedAt": 1773395873853,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1772851036120,
+      "commit": "https://github.com/openclaw/skills/commit/27ff3bcb1e408725c17b6c6a9e95c10e92b2683b"
+    }
+  ]
 }
