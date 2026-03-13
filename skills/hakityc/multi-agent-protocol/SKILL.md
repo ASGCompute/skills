@@ -1,441 +1,406 @@
 ---
 name: multi-agent-protocol
-version: 1.0.0
 description: >
-  Production protocol for multi-agent collaboration in OpenClaw. Combines Spec-First task
-  definition, two-stage review (Spec + Quality), beads dependency graph as task bus,
-  blackboard.json for direct inter-agent communication, Circuit Breaker retry strategy,
-  and git worktree isolation for parallel implementation. Use when orchestrating 2+
-  sub-agents on complex tasks requiring coordination, quality gates, and fault tolerance.
-author: lebo
-license: MIT
-keywords:
-  - multi-agent
-  - orchestration
-  - spec-first
-  - circuit-breaker
-  - blackboard
-  - beads
-  - review
-  - fault-tolerance
-  - parallel-agents
-  - sessions_spawn
+  OpenClaw-native v2 protocol for spec-first multi-agent delivery. Use when you need
+  2+ agents with explicit phase control, dual review gates, bounded retry/circuit
+  breaker behavior, Lobster approval/recovery for side effects, OpenProse orchestration,
+  typed plugin tools backed by SQLite/event log for task state, and ACP integration for
+  external coding harnesses such as Codex. Avoid when a single agent or prompt-only
+  delegation is enough.
 ---
 
-# Multi-Agent Collaboration Protocol
+# Multi-Agent Protocol v2
 
-Production playbook for orchestrating multiple sub-agents in OpenClaw with structured task
-flow, quality gates, inter-agent communication, and automatic fault recovery.
+OpenClaw-native multi-agent protocol. Keep the good parts from v1:
 
-Synthesized from community research: `subagent-driven-development`, `beads`, `swarm-self-heal`,
-`agent-team-orchestration`, and `http-retry-circuit-breaker` patterns.
+- spec-first
+- review gates
+- retry with circuit breaker
 
----
+Replace the brittle parts from v1:
 
-## When to Use
+- no fixed `sessionKey` memory contract
+- no `shared/blackboard.json`
+- no undeclared `beads` or `git` dependency
+- no prompt-only state machine
+- no LangGraph
 
-Use this skill when:
-- Spawning 2+ sub-agents on a complex task
-- Tasks have dependencies between agents
-- Quality matters (not just "done", but "correct and well-built")
-- You need fault tolerance without manual intervention
-- Multiple agents need to share state without going through the orchestrator
+## Architecture
 
-**Don't use for:**
-- Single-agent tasks (unnecessary overhead)
-- One-off spawns with no handoff
-- Simple question delegation
+Use the stack below and do not silently swap layers:
 
----
+1. `SKILL.md`
+   Defines protocol, roles, dependency expectations, and non-negotiable rules.
+2. `OpenProse`
+   Owns orchestration flow and agent dispatch.
+3. `Lobster`
+   Owns approval, pause/resume, and side-effect recovery templates.
+4. `task-store` plugin
+   Owns authoritative task state via typed tools + SQLite event log.
+5. `ACP`
+   Connects external coding harnesses such as Codex.
 
-## Core Principles
+## Source Of Truth
 
-1. **Spec-First** — No spawning without a spec file. No spec = no work starts.
-2. **Two-Stage Review** — Every implementation goes through Spec Review, then Quality Review.
-3. **Serial Implementation** — Only one Implementer runs at a time. Parallel = research/analysis only.
-4. **Blackboard Communication** — Agents read/write a shared file directly. Orchestrator is not a relay.
-5. **Circuit Breaker** — Failures have a ceiling. After threshold → alert human, don't loop forever.
-6. **Fixed sessionKeys** — Same role = same sessionKey = agent memory persists across spawns.
+The source of truth is the `task-store` plugin, not prompts and not reviewer output.
 
----
+- Canonical task phase lives in SQLite.
+- Every phase change is an event.
+- Reviewers append findings and verdicts.
+- Reviewers do **not** finalize phase transitions.
+- The orchestrator is the only actor that decides phase movement.
 
-## Directory Layout
+## Required Dependencies
 
-```
-{project-root}/
-  .beads/              ← beads task graph (git-tracked, auto-managed)
-  specs/
-    {task-id}.md       ← Task spec (MUST exist before spawning Implementer)
-  shared/
-    blackboard.json    ← Live state bus (any agent reads/writes directly)
-    artifacts/
-      {role}/          ← Each agent's output artifacts
-```
+Declare these dependencies explicitly in the skill or the workflow setup:
 
----
+- OpenClaw runtime with `OpenProse`
+- `Lobster` runtime for approval/resume
+- `task-store` plugin enabled
+- local SQLite availability
+- ACP bridge when external harnesses are involved
 
-## Task Lifecycle
+Optional, but explicit when used:
 
-```
-Write Spec → bd create → bd ready → Claim → Implement → Self-Review
-  → Spec Review → Quality Review → bd close → bd sync
-```
+- `git`
+- browser/runtime plugins
+- language-specific build tools
 
----
+Do not assume:
 
-## Step 1 — Write the Spec
+- `beads`
+- `bd`
+- `shared/blackboard.json`
+- persistent role memory through fixed sessions
+- `git worktree`
 
-Before spawning anything, create `specs/{task-id}.md`:
+## Core Rules
 
-```markdown
-## Goal
-What is the final state? (observable, verifiable)
+### 1. Spec-first
 
-## Scope
-What is included / explicitly excluded?
+No execution phase starts before a spec record exists in `task-store`.
 
-## Inputs
-Files, paths, dependencies, environment requirements.
+Minimum spec payload:
 
-## Outputs
-Exact artifact paths and formats expected.
+- `goal`
+- `scope_in`
+- `scope_out`
+- `inputs`
+- `outputs`
+- `acceptance_criteria[]`
+- `risks[]`
 
-## Acceptance Criteria
-Checklist. Each item must be independently verifiable.
-- [ ] criterion 1
-- [ ] criterion 2
+If acceptance criteria are weak or missing, the orchestrator keeps the task in `spec_draft`.
 
-## Risks
-Known unknowns, edge cases, things to watch out for.
-```
+### 2. Phase transitions are explicit
 
-**No acceptance criteria = spec is incomplete. Don't spawn yet.**
+Use a stored phase enum. Recommended baseline:
 
----
-
-## Step 2 — Create Task in beads
-
-```bash
-# Initialize beads in project (first time only)
-bd init --quiet
-
-# Create task
-bd create "Task title" -p 1 --json
-# → returns task id like bd-a1b2
-
-# Add dependencies if needed
-bd dep add bd-child bd-parent     # child is blocked by parent
-
-# Check what's ready to start
-bd ready --json
+```text
+spec_draft
+spec_review
+execution_ready
+executing
+spec_gate
+quality_gate
+awaiting_approval
+ready_to_resume
+completed
+failed
+circuit_open
 ```
 
----
+All transitions must be written through `task_transition`.
 
-## Step 3 — Spawn Implementer
+### 3. Reviewers are evidence producers
 
-The task prompt must be **self-contained** — the agent cannot see your conversation history.
+Reviewer output is evidence, not authority.
 
-```
-sessions_spawn({
-  task: "
-    You are implementing task {task-id}.
+- Spec reviewer answers: "Does the artifact satisfy the spec?"
+- Quality reviewer answers: "Is the implementation acceptable for maintainability and risk?"
+- Reviewers write findings via `task_append_review`.
+- The orchestrator reads review state and decides the next phase.
 
-    ## Spec
-    {paste full spec content here — do not tell agent to read a file}
+### 4. Retry and circuit breaker are stored state
 
-    ## Working Directory
-    {absolute path}
+Retries are not tracked in free text.
 
-    ## Output Path
-    shared/artifacts/implementer/
+- attempt counters live in SQLite
+- retry reasons are evented
+- circuit state is explicit
 
-    ## Context from Dependencies
-    {paste relevant artifacts from blackboard.json if any}
+Recommended policy:
 
-    ## Before Starting
-    If anything in the spec is unclear, ask now before writing code.
+- `attempt 1-2`: retry same phase with bounded backoff
+- `attempt 3`: optional stronger model/runtime
+- `attempt >= 4`: `circuit_open`
 
-    ## Your Responsibilities
-    1. Implement exactly what the spec says (nothing more, nothing less)
-    2. Write tests
-    3. Commit your work
-    4. Self-review against spec acceptance criteria
-    5. Update shared/blackboard.json with your status and artifact path
-    6. Report: what you built, test results, artifact paths, known issues
-  ",
-  sessionKey: "implementer",
-  runTimeoutSeconds: 600
-})
-```
+### 5. Side effects require Lobster gates
 
-**Update blackboard on spawn:**
-```json
-{
-  "agents": {
-    "implementer": { "status": "running", "task": "bd-a1b2", "artifact": null, "ts": "..." }
-  }
-}
-```
+Any real-world effect should pass through Lobster:
 
----
+- writing to external systems
+- approvals
+- irreversible file mutations outside the declared sandbox
+- deployments
+- notifications
+- merges
 
-## Step 4 — Spec Review
+Lobster pauses, requests approval, and resumes from persisted state.
 
-**Do not trust the implementer's self-report. Read the code.**
+### 6. ACP is the bridge for external harnesses
 
-```
-sessions_spawn({
-  task: "
-    You are a Spec Compliance Reviewer.
+When using Codex or another external coding harness:
 
-    ## Your Job
-    Verify the implementation matches the spec — by reading the actual code,
-    not by trusting the implementer's report.
+- launch work through ACP, not prompt-only relays
+- pass `task_id`, `attempt_id`, `workspace`, and allowed capabilities
+- capture external session metadata as non-authoritative references
 
-    ## Spec (the standard)
-    {paste full spec}
+Practical note inferred from the local OpenClaw installation: parent streaming features such
+as `streamTo` are tied to `runtime=acp`, not generic subagent runtime. Design the workflow
+accordingly.
 
-    ## Implementer's Report
-    {paste implementer output}
+## Role Model
 
-    ## Artifact Location
-    shared/artifacts/implementer/
+### Orchestrator
 
-    ## What to Check
-    - MISSING: Requirements in spec not implemented
-    - EXTRA: Things implemented that weren't requested
-    - MISUNDERSTOOD: Implementation interprets spec differently than intended
+The orchestrator:
 
-    ## Output Format
-    ✅ Spec compliant — all requirements verified by code inspection
-    OR
-    ❌ Issues found:
-    - [file:line] Missing: {requirement}
-    - [file:line] Extra: {what was added}
-    - [file:line] Misunderstood: {intended vs actual}
-  ",
-  sessionKey: "spec-reviewer",
-  runTimeoutSeconds: 300
-})
-```
+- creates the task record
+- validates spec completeness
+- dispatches agents
+- reads stored findings
+- decides phase transitions
+- triggers Lobster when approval or recovery is needed
+- opens the circuit when retries are exhausted
 
-**Rules:**
-- Spec Review must pass before Quality Review begins
-- Issues found → same Implementer (same sessionKey) fixes → re-review
-- "Close enough" is not acceptable
+The orchestrator does **not** become a passive message relay or free-form blackboard parser.
 
----
+### Executor
 
-## Step 5 — Quality Review
+The executor may be:
 
-Only run after Spec Review passes.
+- a local OpenClaw worker
+- an ACP-backed external harness such as Codex
+- a read-only research agent
 
-```
-sessions_spawn({
-  task: "
-    You are a Code Quality Reviewer. The spec compliance has already been verified.
-    Your job is to check implementation quality.
+Executor responsibilities:
 
-    ## Artifact Location
-    shared/artifacts/implementer/
+- produce artifacts
+- record attempt heartbeat/checkpoints through typed tools
+- report structured outputs and evidence
 
-    ## What to Check
-    - Names match behavior (not implementation details)
-    - No over-engineering (YAGNI)
-    - Follows existing project patterns
-    - Tests verify behavior, not mock internals
-    - No magic numbers or unexplained inline constants
-    - No leftover debug code or TODOs
+Executor cannot finalize `completed`, `failed`, or gate transitions on its own.
 
-    ## Output Format
-    ✅ Approved
-    OR
-    ❌ Issues:
-    - [CRITICAL] {issue} — must fix before merge
-    - [IMPORTANT] {issue} — should fix
-    - [MINOR] {issue} — optional
-  ",
-  sessionKey: "quality-reviewer",
-  runTimeoutSeconds: 300
-})
+### Spec Reviewer
+
+Reads the actual artifact and records one of:
+
+- `approved`
+- `changes_requested`
+- `blocked`
+
+Plus findings with file references or artifact references.
+
+### Quality Reviewer
+
+Reads the actual artifact after spec gate passes and records:
+
+- maintainability concerns
+- test gaps
+- safety or regression risk
+- approval/rework recommendation
+
+### Lobster Approver / Recovery Actor
+
+Lobster manages:
+
+- approval prompts
+- pause/resume after interruption
+- resuming idempotent or compensating side-effect steps
+
+Lobster does not own the business workflow phase. It only writes approval state and recovery
+evidence back to `task-store`.
+
+## Minimal Lifecycle
+
+```text
+task_create
+  -> spec_review
+  -> execution_ready
+  -> executing
+  -> spec_gate
+  -> quality_gate
+  -> awaiting_approval (only if side effects exist)
+  -> ready_to_resume
+  -> completed
 ```
 
----
+Failure branches:
 
-## Step 6 — Close Task
-
-```bash
-bd close bd-a1b2 --reason "Implemented and reviewed" --json
-bd sync    # Always sync before ending session
+```text
+executing -> retrying -> executing
+executing -> circuit_open
+spec_gate -> execution_ready
+quality_gate -> execution_ready
+awaiting_approval -> failed
 ```
 
----
+## Protocol By Phase
 
-## Blackboard Protocol
+### `spec_draft`
 
-`shared/blackboard.json` is the inter-agent state bus. Any agent reads/writes directly.
-The orchestrator does **not** relay information — agents get it from the blackboard.
+- Create task in `task-store`.
+- Persist full spec content or spec reference.
+- Do not spawn builders yet.
 
-### Schema
+### `spec_review`
 
-```json
-{
-  "agents": {
-    "{role}": {
-      "status": "idle | running | done | failed",
-      "task": "bd-xxxx",
-      "artifact": "shared/artifacts/{role}/output.md",
-      "ts": "ISO-8601 timestamp"
-    }
-  },
-  "tasks": {
-    "bd-xxxx": {
-      "retry_count": 0,
-      "last_error": null,
-      "circuit_status": "closed"
-    }
-  },
-  "signals": [
-    {
-      "from": "{role}",
-      "to": "{role}",
-      "type": "ready_for_review | blocked | artifact_ready",
-      "payload": "path or message",
-      "ts": "ISO-8601 timestamp"
-    }
-  ]
-}
-```
+- Reviewer checks the spec itself for ambiguity and testability.
+- Orchestrator either:
+  - fixes the spec and stays in `spec_draft`, or
+  - transitions to `execution_ready`
 
-### Agent Responsibilities
+### `execution_ready`
 
-| Event | Action |
-|-------|--------|
-| Spawn starts | Write `status: running` |
-| Work complete | Write `status: done` + `artifact` path |
-| Task fails | Write `status: failed` + `error` |
-| Needs another agent's output | Read `agents.{role}.artifact` from blackboard |
+- Orchestrator chooses runtime:
+  - local worker for low-side-effect or local tasks
+  - ACP for Codex/external harness
+- Orchestrator creates a new attempt record.
 
----
+### `executing`
 
-## Circuit Breaker — Retry Strategy
+- Executor works only against declared inputs/outputs.
+- Checkpoints go through typed tools.
+- Side effects are declared ahead of time as planned actions.
 
-```
-On task failure:
+### `spec_gate`
 
-L1 — Auto-retry (same agent, same sessionKey)
-  When: retry_count < 2
-  Delay: 30s backoff
-  For: transient errors, timeouts
+- Spec reviewer inspects produced artifact.
+- Reviewer writes findings only.
+- Orchestrator decides:
+  - pass to `quality_gate`
+  - rework back to `execution_ready`
+  - open circuit if repeated mismatch indicates spec or implementation collapse
 
-L2 — Escalate (stronger model, same sessionKey)
-  When: retry_count == 2
-  Action: override model to a higher-reasoning option
-  For: task is hard, needs better reasoning
+### `quality_gate`
 
-L3 — Circuit Open (stop, alert human)
-  When: retry_count >= 3
-  Action:
-    - Write blackboard tasks.{id}.circuit_status = "circuit_open"
-    - Alert user: task name, failure reason, retry history
-    - bd update {id} --status blocked
-  For: task itself is broken, retrying won't help
-```
+- Quality reviewer records findings only.
+- Orchestrator decides:
+  - `completed`
+  - `execution_ready`
+  - `awaiting_approval`
 
----
+### `awaiting_approval`
 
-## Parallelism Rules
+- Lobster requests human approval with structured context.
+- Approved result becomes evidence in store.
+- Orchestrator transitions to `ready_to_resume`.
 
-| Task Type | Parallel? | Reason |
-|-----------|-----------|--------|
-| Implementation (writes code) | ❌ Serial only | Code conflicts |
-| Research / analysis | ✅ Yes | Read-only |
-| Documentation (different files) | ✅ Yes | File isolation |
-| Review (different tasks) | ✅ Yes | Read-only |
+### `ready_to_resume`
 
-### When You Truly Need Parallel Implementation — git worktree
+- Lobster or orchestrator resumes the exact side-effect step using persisted idempotency data.
 
-```bash
-git worktree add ../workspace-{role} -b agent/{role}/{task-id}
-```
+### `circuit_open`
 
-- Pass the worktree path as working directory in spawn prompt
-- After completion: PR → orchestrator reviews diff → merge
+- Stop automatic retries.
+- Surface:
+  - failure summary
+  - attempts
+  - last known good artifact
+  - unblock options
 
----
+## What Goes In Storage
 
-## Fixed sessionKey Convention
+The `task-store` plugin should persist at least:
 
-Same role across spawns → same sessionKey → agent remembers previous context.
+- task header
+- current phase
+- spec payload or reference
+- review records
+- attempt records
+- artifact records
+- approval records
+- event log
+- optional external session references
 
-| Role | sessionKey | Retains |
-|------|-----------|---------|
-| Implementer | `implementer` | Codebase knowledge, past decisions |
-| Spec Reviewer | `spec-reviewer` | Review standards, past findings |
-| Quality Reviewer | `quality-reviewer` | Code style patterns, project conventions |
-| Researcher | `researcher` | Research context, sources |
+The plugin storage is authoritative. Prompt text is not.
 
----
+## OpenProse Guidance
 
-## Orchestrator Boundaries
+The `.prose` workflow should be minimal and boring:
 
-**Do:**
-- Write spec files
-- Manage beads (`bd create`, `bd dep add`, `bd ready`, `bd close`, `bd sync`)
-- Spawn role agents
-- Read blackboard to determine next phase
-- Execute Circuit Breaker logic
-- Report progress to user
+- read state
+- branch on typed state
+- dispatch one actor
+- store result
+- decide next phase
 
-**Don't:**
-- Write implementation code directly
-- Relay information between agents (they read blackboard)
-- Spawn Implementer without a spec file
+Do not encode business state only in the prose graph. The graph coordinates. The plugin stores.
 
----
+Read [workflows/openclaw-native-v2.prose](workflows/openclaw-native-v2.prose) when wiring the
+workflow.
 
-## Watchdog (optional but recommended)
+## Lobster Guidance
 
-Install `swarm-self-heal` and run periodic health checks:
+Use Lobster only where it adds hard guarantees:
 
-```bash
-bash skills/swarm-self-heal/scripts/check.sh
-```
+- approval request with resumable context
+- idempotent recovery after interruption
+- controlled side-effect replay
 
-Configure as a cron job (every 30 minutes) to detect:
-- Silent agents (no blackboard update past timeout)
-- `circuit_open` tasks needing human intervention
-- Gateway health
+Read [lobster/approval-recovery.template.yaml](lobster/approval-recovery.template.yaml) when a
+task contains side effects or human approval.
 
----
+## Plugin Guidance
 
-## Session End Checklist
+Use the `task-store` plugin as the only write path for protocol state.
 
-```bash
-bd sync            # Flush all task state to git
-bd ready --json    # Show next unblocked tasks (for handoff notes)
-```
+Read [references/task-store-plugin.md](references/task-store-plugin.md) when:
 
-Write your own status to blackboard: `status: done | paused`.
+- implementing the plugin
+- validating tool shapes
+- deciding schema changes
 
----
+## Permissions
 
-## Quick Reference
+Use least privilege. The matrix lives in
+[references/agent-permissions.md](references/agent-permissions.md).
 
-```bash
-# Initialize
-bd init --quiet
+Key rule:
 
-# Task management
-bd create "Title" -p 1 --json
-bd dep add bd-child bd-parent
-bd ready --json
-bd update bd-xxxx --status in_progress --assignee implementer --json
-bd close bd-xxxx --reason "done" --json
-bd sync
+- executors can write artifacts and attempts
+- reviewers can write findings
+- only orchestrator can move the phase
 
-# Dependency visualization
-bd dep tree bd-xxxx
-bd blocked --json
-```
+## Migration Rules From v1
+
+Read [references/migration.md](references/migration.md) before replacing an existing v1 setup.
+
+Summary:
+
+- replace fixed session identity with run-scoped `attempt_id` and optional `external_session_ref`
+- replace blackboard with typed storage
+- replace beads/git buses with plugin tools
+- replace reviewer-led state changes with orchestrator-led transitions
+
+## Quick Start
+
+1. Enable `task-store`.
+2. Create a task with a full spec.
+3. Run the OpenProse workflow.
+4. Route external coding work through ACP.
+5. Use Lobster only for approval/recovery steps.
+6. Let orchestrator decide every phase transition from stored evidence.
+
+## Anti-Patterns
+
+Do not do any of the following:
+
+- use fixed role `sessionKey` as the memory backbone
+- store canonical state in `shared/blackboard.json`
+- let reviewer verdict directly close the task
+- let executor mutate final phase
+- assume `git` or `beads` exists without declaring it
+- recover from interruption by guessing from prompt history
+- add LangGraph just to simulate a state machine already held in SQLite

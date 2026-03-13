@@ -1,11 +1,17 @@
 {
   "owner": "hakityc",
   "slug": "multi-agent-protocol",
-  "displayName": "Multi-Agent Protocol",
+  "displayName": "Multi Agent Protocol",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773231065491,
-    "commit": "https://github.com/openclaw/skills/commit/9ff5f121ef40b220fa8f786b7ee1fc7e15e600a9"
+    "version": "2.0.0",
+    "publishedAt": 1773403591741,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773231065491,
+      "commit": "https://github.com/openclaw/skills/commit/9ff5f121ef40b220fa8f786b7ee1fc7e15e600a9"
+    }
+  ]
 }
