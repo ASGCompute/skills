@@ -1,70 +1,60 @@
 ---
 name: learn-me
 description: "Learn me: Lets OpenClaw proactively learn more about you through natural conversation."
-version: 0.3.1
+version: 0.5.2
 user-invocable: true
 disable-model-invocation: false
-metadata: {"openclaw":{"emoji":"💬","always":true,"homepage":"https://github.com/YevhenDiachenko0/openclaw-learn-me-skill","requires":{"bins":["openclaw"]}}}
+metadata: {"openclaw":{"emoji":"💬","homepage":"https://github.com/YevhenDiachenko0/openclaw-learn-me-skill","requires":{"bins":["openclaw"]}}}
 ---
 
 # Learn Me
 
-A skill that lets OpenClaw proactively learn more about you through natural conversation. It creates scheduled crons that store learned facts in memory. You can also trigger it manually with `/learn-me`.
+A skill that lets OpenClaw learn more about you through natural conversation. With your permission, it creates scheduled crons that prompt occasional questions. You can trigger it manually with `/learn-me` or set up a schedule when prompted.
 
-The idea is to know the user better, not to "collect data". Just ask questions, hear answers and ask what is interesting. The goal is not coverage but understanding and fulfilling discussion.
-
-# Installation
-
-Via ClawHub:
-
-    clawhub install learn-me
-
-Manual:
-
-    git clone https://github.com/YevhenDiachenko0/openclaw-learn-me-skill.git ~/.openclaw/skills/learn-me
+The idea is to know the user better, not to "collect data". The goal is not coverage but understanding and meaningful conversation.
 
 # First-Run
 
-When you see this skill for the first time, do not wait for the user to ask. Immediately create crons and a memory file. Requires: OpenClaw memory must be enabled.
+When you see this skill for the first time, introduce it to the user: explain you'll occasionally weave in a question to learn more about them, and can automate this with a daily schedule.
 
-Create `learn-me-*` crons if none exist. Pick 1-2 times per day based on the user (USER.md, memory). Use names `learn-me-morning`, `learn-me-day`, or `learn-me-evening`.
+Ask the user if they'd like to set up a schedule. Suggest 1-2 times per day (morning, evening) and let them pick. Only create crons after they confirm.
 
-    openclaw cron add --name "learn-me-morning" --cron "0 9 * * *" --session main --system-event "learn-me: Pick one question direction from memory/next-questions.md and weave it naturally into your next message."
+Once confirmed, create the crons:
+
+```
+openclaw cron add --name "learn-me-morning" --cron "0 9 * * *" --session main --system-event "learn-me: Pick one question direction from memory/next-questions.md and weave it naturally into your next message."
+```
 
 Create `memory/next-questions.md` with sections: Question Directions, Sensitive Topics.
 
-After setup, tell the user: what schedule was created and that they can ask to reschedule anytime.
+Tell the user what schedule was created and that they can ask to reschedule or disable it anytime.
 
 # Quick Reference
 
-- **User reveals something new** — note direction in `memory/next-questions.md`. Don't follow up now.
+- **User reveals something new** — note a possible follow-up in `memory/next-questions.md`. Don't follow up in the same conversation.
 - **User shows energy** — note as direction to explore later.
 - **Cron fires** — if mid-task or focused, skip. Otherwise pick direction, ask naturally, update file.
 - **User deflects** — mark sensitive (30-day cooldown). Twice = permanent. Never ask again.
 - **User stressed or upset** — skip.
-
-# Collecting Directions
-
-When the user naturally shares something new — a detail, opinion, or context about their life — note a possible follow-up question in `memory/next-questions.md`. Don't act on it in the same conversation.
 
 # When a Cron Fires
 
 1. If mid-task or focused — skip.
 2. Pick a direction. Prefer: follow-ups, then gaps, then expanding on energy.
 3. Vary topics. Skip Sensitive Topics.
-4. Ask one question, woven naturally. No natural opening — skip.
+4. Ask one question, woven naturally. If there's no natural opening — skip.
 
 When user answers: acknowledge naturally, update file, don't push if reluctant.
 
 # Delivery
 
-Never announce questions. No "I was curious...", "Can I ask you something?"
+Weave questions into context: follow-ups, observations, asides. For personal topics, lead with acknowledgment. Open-ended but specific.
 
-Weave into context — tie to conversation, natural follow-up, observation, casual aside. For personal topics, offer an observation or acknowledge the weight first. Open-ended but specific.
+Avoid robotic openers like "Question 3 of 10:". Use natural ones: "I was curious..." or "Can I ask..."
 
 # Cautions
 
-- **Back off** if annoyed, distracted, or having a hard time — skip. Offer to adjust schedule if about timing.
+- **Back off** if annoyed, distracted, or struggling — skip. Offer to adjust schedule if it's about timing.
 - **Privacy** — never store private/secret info.
 - **No surveillance** — "I see you were up at 2am again" = creepy. "You mentioned you're a night owl" = fine.
 - **No manipulation or repetition**. One question max per interaction.
