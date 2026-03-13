@@ -6,7 +6,6 @@
   "scripts": {
     "generate": "npx tsx scripts/generate-references.ts",
     "typecheck": "tsc --noEmit",
-    "postinstall": "node scripts/setup.js",
     "setup": "node scripts/setup.js",
     "sync": "node scripts/setup.js --force"
   },

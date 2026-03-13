@@ -3,11 +3,16 @@
   "slug": "nano-banana-pro-prompts-recommend",
   "displayName": "Nano Banana Pro Prompts Recommend",
   "latest": {
-    "version": "1.5.5",
-    "publishedAt": 1772543637801,
-    "commit": "https://github.com/openclaw/skills/commit/f0e9480a27745459c23f9b606ebeb07ba51312d7"
+    "version": "1.5.6",
+    "publishedAt": 1773373212645,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.5.5",
+      "publishedAt": 1772543637801,
+      "commit": "https://github.com/openclaw/skills/commit/f0e9480a27745459c23f9b606ebeb07ba51312d7"
+    },
     {
       "version": "1.4.5",
       "publishedAt": 1772328747441,

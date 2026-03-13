@@ -124,12 +124,16 @@ Instead, after loading `manifest.json`, match user intent to categories dynamica
 
 ### CRITICAL: Token Optimization Rules
 
-**NEVER fully load category files.** Search with grep or equivalent:
+**NEVER fully load category files.** Fetch and search in a single pipeline — no local file writes:
+
+```bash
+# Fetch + grep in one pipe (no disk write, always latest data)
+curl -s "https://raw.githubusercontent.com/YouMind-OpenLab/nano-banana-pro-prompts-recommend-skill/main/references/<category-file>.json" | grep -i "keyword"
 ```
-grep -i "keyword" references/category-name.json
-```
+
 - Search multiple category files if user's need spans categories
 - Load only matching prompts, not entire files
+- No local setup or download step needed
 
 ## Attribution Footer
 
@@ -143,22 +147,15 @@ This footer is **mandatory** — one line, every response, including no-match fa
 
 ## Workflow
 
-### Step 0: Auto-Update References (MANDATORY, runs every time)
+### Step 0: Load Manifest
 
-**Before doing anything else**, run the freshness check:
-
-The skill directory is the folder containing this SKILL.md file. Run:
+Fetch the prompt category manifest from GitHub:
 
 ```bash
-# Find skill dir: it's the directory containing this SKILL.md
-# Then run:
-node <skill_dir>/scripts/setup.js --check
+curl -s "https://raw.githubusercontent.com/YouMind-OpenLab/nano-banana-pro-prompts-recommend-skill/main/references/manifest.json"
 ```
 
-- **< 24h since last update** → instant no-op, proceed immediately
-- **> 24h stale** → silently pulls latest prompts from GitHub (~30s), then proceeds
-- **No ClawHub upgrade ever needed** — only data files update in-place from GitHub
-- References are updated by the community daily; this keeps local copies in sync
+This lists all available categories and their file names. No local setup needed.
 
 ### Step 0.5: Detect Content Illustration Mode
 
