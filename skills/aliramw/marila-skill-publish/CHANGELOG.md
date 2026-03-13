@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.0.8] - 2026-03-11
+
+### 新增
+- 补充 ClawHub CLI 发布兼容坑：`SKILL.md required` 与 `acceptLicenseTerms: invalid value` 的联合排查逻辑
+- 补充手工调用 `https://clawhub.ai/api/v1/skills` 的 API 发布兜底方案
+- 补充 `metadata mismatch` 审核反馈的修复流程
+- 明确 GitHub Release 成功但 ClawHub CLI 失败时，不要盲重试，优先判断是否为 CLI payload bug
+- 同步修正版本元数据不一致：`SKILL.md` / `package.json` 对齐到 `1.0.8`
+
 ## [1.0.7] - 2026-03-07
 
 ### 修复

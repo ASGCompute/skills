@@ -1,13 +1,18 @@
 {
   "owner": "aliramw",
   "slug": "marila-skill-publish",
-  "displayName": "marila-skill-publish",
+  "displayName": "Marila Skill Publish",
   "latest": {
-    "version": "1.0.7",
-    "publishedAt": 1772839983571,
-    "commit": "https://github.com/openclaw/skills/commit/24be2def35a0bc7e2111f6b057a6e8b82c61b7dc"
+    "version": "1.0.8",
+    "publishedAt": 1773162531795,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.7",
+      "publishedAt": 1772839983571,
+      "commit": "https://github.com/openclaw/skills/commit/24be2def35a0bc7e2111f6b057a6e8b82c61b7dc"
+    },
     {
       "version": "1.0.2",
       "publishedAt": 1772658278765,

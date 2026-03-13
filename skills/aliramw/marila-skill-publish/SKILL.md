@@ -1,7 +1,7 @@
 ---
 name: marila-skill-publish
 description: 用于发布和更新 OpenClaw 技能到 ClawHub，并同步 GitHub Release。用户提到“发布技能”“发到 ClawHub”“发布这个 skill”“写完就发布”“上线这个技能”等场景时使用。包含完整发布步骤、版本规范、发布前检查清单、GitHub Release 同步规则和常见问题处理。
-version: 1.0.7
+version: 1.0.8
 metadata:
   openclaw:
     requires:
@@ -384,6 +384,70 @@ git config --global user.email "you@example.com"
 # 补 remote
 git remote add origin https://github.com/<user>/<repo>.git
 ```
+
+### 问题 7: `SKILL.md required` / `acceptLicenseTerms: invalid value`
+
+**症状 1：**
+```bash
+Error: SKILL.md required
+```
+
+**先判断：**
+- 如果目录里真的没有 `SKILL.md`，那就是路径或文件问题
+- 如果目录里明明有 `SKILL.md`，但后续又报 `acceptLicenseTerms: invalid value`，那真正的问题通常不是技能文件缺失，而是 **ClawHub CLI 与服务端 publish payload 兼容有坑**
+
+**症状 2：**
+```bash
+Publish payload: acceptLicenseTerms: invalid value
+```
+
+**结论：**
+- 这类问题不要盲重试 `clawhub publish`
+- 先确认：
+  ```bash
+  pwd
+  ls -la
+  sed -n '1,20p' SKILL.md
+  clawhub whoami
+  ```
+- 如果 `SKILL.md` 存在、登录正常，基本可判定为 CLI publish payload bug，而不是技能目录缺文件
+
+**兜底方案（实测可用）：**
+1. 正常完成 `git push` 和 `gh release create`
+2. 从本机 ClawHub 配置里读取 token：
+   - macOS 实测路径：`~/Library/Application Support/clawhub/config.json`
+3. 手工向 `https://clawhub.ai/api/v1/skills` 发 `multipart/form-data` 请求：
+   - `payload` 内显式带：`slug`、`displayName`、`version`、`changelog`、`tags`、`acceptLicenseTerms: true`
+   - 将技能目录中的文本文件逐个作为 `files` 上传
+4. 发布成功后，用 `clawhub inspect <slug>` 验证最新版本
+
+**规则更新：**
+- 以后遇到 `acceptLicenseTerms: invalid value`，默认按 **CLI bug** 排查，不再把时间浪费在反复重试上
+- GitHub Release 成功 + ClawHub CLI 失败，不代表技能不能发布；优先切到手工 API 发布兜底
+
+### 问题 8: ClawHub 审核提示 metadata mismatch
+
+**典型反馈：**
+- 功能本身是对的
+- 但 registry metadata 没声明实际依赖的二进制或环境变量
+
+**高频遗漏项：**
+- `requires.bins`
+- `requires.env`
+- `primaryEnv`
+- `package.json` 里的 `requiresBinaries` / `requiredEnv` / `credentials`
+
+**处理顺序：**
+1. 对照代码、脚本、README、SKILL.md，列出真实依赖
+2. 同步修复：
+   - `SKILL.md` frontmatter
+   - `package.json`
+   - README / 示例命令
+3. 升一个 patch 版本
+4. 重新走：`git push` → `gh release create` → `ClawHub publish`
+
+**硬规则：**
+- 只要 skill 里用了 CLI、环境变量、本地沙箱目录，就必须把声明写全；不写全，审核很容易打回
 
 ## 📝 版本更新流程
 
