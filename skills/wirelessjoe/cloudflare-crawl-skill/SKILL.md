@@ -1,6 +1,12 @@
 ---
 name: cloudflare-crawl
 description: Crawl websites using Cloudflare's Browser Rendering API. Use when you need to scrape entire sites, build knowledge bases, extract content from multiple pages, or create RAG datasets. Works on Cloudflare-protected sites. Returns HTML, Markdown, or AI-extracted JSON.
+requires:
+  env:
+    - CLOUDFLARE_API_TOKEN
+    - CLOUDFLARE_ACCOUNT_ID
+  files:
+    - scripts/crawl.js
 ---
 
 # Cloudflare Crawl
@@ -45,8 +51,8 @@ node scripts/crawl.js results <job_id> --format markdown
 
 ### 1. Start Crawl Job
 ```bash
-curl -X POST "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/browser-rendering/crawl" \
-  -H "Authorization: Bearer $API_TOKEN" \
+curl -X POST "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/browser-rendering/crawl" \
+  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://example.com",
@@ -60,16 +66,16 @@ Returns: `{ "success": true, "result": "job_id_here" }`
 
 ### 2. Poll for Completion
 ```bash
-curl "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/browser-rendering/crawl/$JOB_ID?limit=1" \
-  -H "Authorization: Bearer $API_TOKEN"
+curl "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/browser-rendering/crawl/$JOB_ID?limit=1" \
+  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"
 ```
 
 Status values: `running`, `completed`, `errored`, `cancelled_due_to_timeout`
 
 ### 3. Get Results
 ```bash
-curl "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/browser-rendering/crawl/$JOB_ID" \
-  -H "Authorization: Bearer $API_TOKEN"
+curl "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/browser-rendering/crawl/$JOB_ID" \
+  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"
 ```
 
 ## Parameters
