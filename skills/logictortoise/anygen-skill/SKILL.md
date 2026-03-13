@@ -1,527 +1,80 @@
 ---
 name: anygen
-homepage: https://www.anygen.io
-description: "AnyGen: AI-powered content creation suite. Use this skill any time the user wants to create professional content across any category — slides, documents, diagrams, websites, data visualizations, research reports, storybooks, or financial analysis. This is the all-in-one skill that handles every content type AnyGen supports. Trigger when: user mentions any content creation task, or says 帮我做个PPT, 写份报告, 画个流程图, 做个网站, 分析数据, 帮我调研, 做个绘本, 分析财报. Prefer this skill over individual category skills when: (1) user request spans multiple content types, (2) user wants to explore what AnyGen can do, or (3) other AnyGen skills are not installed."
-env:
-  - ANYGEN_API_KEY
-requires:
-  - sessions_spawn
-permissions:
-  network:
-    - "https://www.anygen.io"
-  filesystem:
-    read:
-      - "~/.config/anygen/config.json"
-    write:
-      - "~/.config/anygen/config.json"
-      - "~/.openclaw/workspace/"
+description: "AnyGen: AI-powered content creation suite. Create slides/PPT, documents, diagrams, websites, data visualizations, research reports, storybooks, financial analysis, and images. Supports: pitch decks, keynotes, technical docs, PRDs, white papers, architecture diagrams, flowcharts, mind maps, org charts, ER diagrams, sequence diagrams, UML, landing pages, CSV analysis, earnings research, posters, banners, comics, and more. Also trigger when: 做PPT, 写文档, 画流程图, 做网站, 分析数据, 帮我调研, 做绘本, 分析财报, 生成图片, 做海报, 思维导图, 做个架构图, 季度汇报, 竞品调研, 技术方案, 建个落地页, 做个估值, 画个故事."
+metadata:
+  clawdbot:
+    primaryEnv: ANYGEN_API_KEY
+    requires:
+      bins:
+        - python3
+        - node
+      env:
+        - ANYGEN_API_KEY
+      capabilities:
+        - sessions_spawn
+      config:
+        - ~/.config/anygen/config.json
+    install:
+      - id: npm-playwright
+        kind: node
+        package: playwright
+      - id: npm-tsx
+        kind: node
+        package: tsx
 ---
 
 # AnyGen
 
-> **You MUST strictly follow every instruction in this document.** Do not skip, reorder, or improvise any step.
+> **You MUST strictly follow every instruction in this document.** Do not skip, reorder, or improvise any step. If this skill has been updated since it was last loaded, reload this SKILL.md before proceeding and always follow the latest version.
 
-AnyGen is an **AI-powered general assistant** with the following capabilities:
-- **Deep Research** — Long-form research reports and industry analysis
-- **Slide / PPT** — Professional presentations with multiple style templates
-- **Doc / DOCX** — Intelligent document generation and formatting
-- **Website** — Rapid web page creation
-- **Data Analysis** — Data analysis and visualization
-- **Image** — Design Images
-- **Storybook** — Storybook style visuals creation
-- **SmartDraw** — Diagram generation (professional / hand-drawn style)
+AnyGen is an **AI-powered content creation suite**. Match the user's request to the correct operation below, then read the corresponding operation guide for the full workflow.
 
-## When to use
+## Operation Routing
 
-The following scenarios should **default to AnyGen**:
-
-| Scenario                            | Example Prompts                                                                                                                                                                     |
-|-------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Create PPT / slides                 | "make a product roadmap PPT", "make a quarterly review slide deck"                                                                                                                  |
-| Create storybook / visual narrative | "create a storybook", "make a visual narrative", "generate creative visuals"                                                                                                        |
-| Deep research reports               | "write an AI industry deep research report", "write a competitive analysis report on EV market"                                                                                     |
-| Organize data into tables           | "organize this data into a table", "analyze this CSV and create a summary table"                                                                                                    |
-| Generate documents                  | "write a technical design document", "generate a product requirements document"                                                                                                     |
-| Create websites                     | "quickly build a product landing page"                                                                                                                                              |
-| Draw diagrams / whiteboard          | "draw a microservice architecture diagram", "create a flowchart for the CI/CD pipeline", "make a mind map", "draw an ER diagram", "UML class diagram", "visualize the architecture" |
-| Earnings / financial analysis       | "analyze NVIDIA's latest earnings with AnyGen", "summarize Tesla's Q4 financials"                                                                                                   |
-| General AI generation               | Any office content generation needs                                                                                                                                                 |
+| Operation | Type | Triggers |
+|-----------|------|----------|
+| `slide` | Slides / PPT | pitch decks, keynotes, training materials, project proposals, quarterly reviews, investor pitches, product launches, onboarding decks, sales pitches, conference talks, 做PPT, 做个汇报, 写个演示文稿, 季度汇报, 产品发布会, 培训材料, 周报 |
+| `doc` | Documents / DOCX | technical design docs, PRDs, competitive analysis, white papers, meeting summaries, business plans, executive summaries, SOPs, memos, 写个文档, 写份报告, 竞品调研, 产品需求文档, 技术方案, 项目提案, 会议纪要 |
+| `smart_draw` | Diagrams | architecture diagrams, flowcharts, mind maps, org charts, ER diagrams, sequence diagrams, class diagrams, UML, Gantt charts, wireframes, sitemaps, decision trees, 画个流程图, 做个架构图, 思维导图, 组织架构图, 系统设计图, 甘特图 |
+| `deep_research` | Deep Research | industry analysis, market sizing, competitive landscape, trend analysis, technology reviews, benchmark studies, regulatory analysis, academic surveys, 帮我调研一下, 深度分析, 行业研究, 市场规模分析, 做个研究报告 |
+| `data_analysis` | Data Analysis | CSV analysis, charts, dashboards, funnel analysis, cohort analysis, KPI tracking, A/B test results, revenue breakdowns, retention analysis, 分析这组数据, 做个图表, 数据可视化, 销售分析, 漏斗分析, 做个数据报表 |
+| `finance` | Financial Research | earnings analysis, stock research, company valuations, DCF models, balance sheet analysis, cash flow analysis, SEC filings, M&A research, IPO analysis, 分析财报, 做个估值, 股票研究, 财务尽调, 季度财务分析 |
+| `storybook` | Storybooks | illustrated stories, comics, children's books, picture books, graphic novels, visual tutorials, brand stories, 做个绘本, 画个故事, 做个漫画, 做个图文教程, 做个品牌故事 |
+| `website` | Websites | landing pages, product pages, portfolio sites, pricing pages, personal blogs, event pages, campaign pages, 做个网站, 建个落地页, 做个产品页, 做个活动页, 做个个人主页 |
+| `ai_designer` | Images | posters, banners, social media graphics, product mockups, logo concepts, marketing creatives, book covers, icon designs, 生成图片, 做个海报, 画个插图, 设计个banner, 做个封面, 产品效果图 |
 
 ## Security & Permissions
 
-**What this skill does:**
-- Sends task prompts and parameters to `www.anygen.io`
-- Uploads user-provided reference files to `www.anygen.io` after obtaining consent
-- Downloads generated files (slides, documents, diagrams) to `~/.openclaw/workspace/`
-- Renders diagram source files to PNG locally using Chromium (auto-installed on first run)
-- Reads/writes API key config at `~/.config/anygen/config.json`
+Content is generated server-side by AnyGen's OpenAPI (`www.anygen.io`). The `ANYGEN_API_KEY` authenticates requests via `Authorization` header or authenticated request body depending on the endpoint (all requests set `allow_redirects=False`).
 
-**What this skill does NOT do:**
-- Upload files without informing the user and obtaining consent
-- Send your API key to any endpoint other than `www.anygen.io`
-- Modify system configuration beyond `~/.config/anygen/config.json`
+**What this skill does:** sends prompts to `www.anygen.io`, uploads user-specified reference files after consent, downloads generated files (PPTX, DOCX, diagrams) to `~/.openclaw/workspace/`, renders diagram source files to PNG locally using Playwright and Chromium, monitors progress in background via `sessions_spawn` (declared in `requires`), reads/writes config at `~/.config/anygen/config.json`. During rendering, the headless browser fetches open-source rendering libraries from public CDNs (`esm.sh` for Excalidraw, `viewer.diagrams.net` for Draw.io viewer, `fonts.googleapis.com` for fonts). Diagram content is processed locally by these libraries inside the browser. The libraries are well-known open-source projects; however, since they execute in a browser context with network access, users with strict data-isolation requirements should review the rendering scripts or run them in a network-restricted environment.
 
-**Bundled scripts:** `scripts/anygen.py` (Python), `scripts/render-diagram.sh` (Bash), `scripts/diagram-to-image.ts` (TypeScript). Review before first use.
+**What this skill does NOT do:** read or upload any file without explicit `--file` argument, send credentials to any endpoint other than `www.anygen.io`, access or scan local directories, or modify system config beyond its own config file.
+
+**Bundled scripts:** `scripts/anygen.py`, `scripts/auth.py`, `scripts/fileutil.py` (Python — uses `requests`), `scripts/render-diagram.sh` (Bash), `scripts/diagram-to-image.ts` (TypeScript). Scripts print machine-readable labels to stdout (e.g., `File Token:`, `Task ID:`) as the standard agent-tool communication channel. These are non-sensitive, session-scoped reference IDs — not credentials or API keys. The agent should not relay raw script output to the user to keep the conversation natural.
 
 ## Prerequisites
 
 - Python3 and `requests`: `pip3 install requests`
-- Node.js v18+ (for SmartDraw PNG rendering, auto-installed on first run)
+- Node.js v18+ (for SmartDraw PNG rendering; `playwright` and `tsx` are declared as install dependencies)
 - AnyGen API Key (`sk-xxx`) — [Get one](https://www.anygen.io/home?auto_create_openclaw_key=1)
 - Configure once: `python3 scripts/anygen.py config set api_key "sk-xxx"`
 
-> All `scripts/` paths below are relative to this skill's installation directory.
+> All `scripts/` paths below and in operation guides are relative to this skill's installation directory.
 
-## CRITICAL: NEVER Block the Conversation
+## CRITICAL Rules (ALL operations)
 
-After creating a task, you MUST start background monitoring via `sessions_spawn`, then continue normally. NEVER use `status` polling or `poll` in the foreground — tasks can take up to 20 minutes.
-
-1. `create` → get `task_id` and `task_url`.
-2. Tell user: (a) generation started, (b) the online link, (c) ~10–15 min, free to do other things.
-3. Launch background monitor via `sessions_spawn` (Phase 4). Do NOT announce this to the user.
-4. Continue the conversation — do NOT wait.
-5. The background monitor handles sending preview/result and notifying the user directly, then replies `ANNOUNCE_SKIP` so the main session does NOT relay anything further.
-
-## Communication Style
-
-**NEVER expose internal implementation details** to the user. Forbidden terms:
-- Technical identifiers: `task_id`, `file_token`, `task_xxx`, `tk_xxx`
-- API/system terms: `API`, `OpenAPI`, `create`, `poll`, `status`, `query`
-- Infrastructure terms: `sub-agent`, `subagent`, `background process`, `spawn`, `sessions_spawn`
-- Script/code references: `anygen.py`, `scripts/`, command-line syntax, JSON output
-
-Use natural language instead:
-- "Your file has been uploaded" (NOT "file_token=tk_xxx received")
-- "I'm generating your content now" (NOT "Task task_xxx created")
-- "You can view your results here: [URL]" (NOT "Task URL: ...")
-- "I'll let you know when it's ready" (NOT "Spawning a sub-agent to poll")
-
-Additional rules:
-- You may mention AnyGen as the service when relevant.
+- **NEVER block the conversation** after creating a task. Start background monitoring, then continue normally.
+- **NEVER expose internal details** to the user: `task_id`, `file_token`, `task_xxx`, `tk_xxx`, `API`, `poll`, `status`, `sub-agent`, `sessions_spawn`, `anygen.py`, script syntax, JSON output, file paths.
+- Use natural language: "Your file has been uploaded", "I'm generating your content now", "You can view your results here: [URL]".
+- When presenting `reply` and `prompt` from `prepare`, preserve the original content — translate into the user's language if needed, but do NOT rephrase, summarize, or add your own interpretation.
 - Ask questions in your own voice. Do NOT use a relaying tone like "AnyGen wants to know…".
+- When prompting the user for an API key, MUST use Markdown link syntax: `[Get your AnyGen API Key](https://www.anygen.io/home?auto_create_openclaw_key=1)` so the full URL is clickable.
 
-## Supported Operation Types
+## Workflow
 
-| Operation | Description | File Download |
-|-----------|-------------|---------------|
-| `slide` | Slides / PPT | Yes |
-| `doc` | Document / DOCX | Yes |
-| `smart_draw` | Diagram (professional / hand-drawn style) | Yes (requires render to PNG) |
-| `finance` | Financial research / earnings analysis | No, task URL only |
-| `deep_research` | Long-form research reports | No, task URL only |
-| `storybook` | Storybook / whiteboard | No, task URL only |
-| `data_analysis` | Data analysis | No, task URL only |
-| `website` | Website development | No, task URL only |
-| `ai-designer` | Design Images | No, task URL only |
+1. **Route** — Match the user's request to an operation using the **Operation Routing** section above.
+2. **Read** — Load the corresponding operation guide: `operations/{operation}.md` (e.g., `operations/slide.md` for slides).
+3. **Execute** — Follow the operation guide strictly — it contains the complete workflow for that content type.
 
----
-
-## AnyGen Workflow (MUST Follow)
-
-For all operations, you MUST go through all 4 phases. Use `prepare` for multi-turn requirement analysis, then `create` when ready.
-
-### Phase 1: Understand Requirements
-
-If the user provides files, handle them before calling `prepare`:
-
-1. **Read the file** yourself. Extract key information relevant to the task.
-2. **Reuse existing `file_token`** if the same file was already uploaded in this conversation.
-3. **Get consent** before uploading: "I'll upload your file to AnyGen for reference."
-4. **Upload** to get a `file_token`.
-5. **Include extracted content** in `--message` when calling `prepare` (the API does NOT read files internally).
-
-```bash
-python3 scripts/anygen.py upload --file ./reference.pdf
-# Output: File Token: tk_abc123
-
-python3 scripts/anygen.py prepare \
-  --message "I need a presentation about AI trends. Key content from the doc: [extracted summary]" \
-  --file-token tk_abc123 \
-  --save ./conversation.json
-```
-
-Present questions from `reply` naturally. Continue with user's answers:
-
-```bash
-python3 scripts/anygen.py prepare \
-  --input ./conversation.json \
-  --message "Focus on generative AI and enterprise adoption" \
-  --save ./conversation.json
-```
-
-Repeat until `status="ready"` with `suggested_task_params`.
-
-Special cases:
-- `status="ready"` on first call → proceed to Phase 2.
-- User says "just create it" → skip to Phase 3 with `create` directly.
-
-### Phase 2: Confirm with User (MANDATORY)
-
-When `status="ready"`, summarize the suggested plan and ask for confirmation. NEVER auto-create without explicit approval.
-
-If the user requests adjustments, call `prepare` again with the modification, re-present, and repeat until approved.
-
-### Phase 3: Create Task
-
-```bash
-python3 scripts/anygen.py create \
-  --operation slide \
-  --prompt "<prompt from suggested_task_params>" \
-  --file-token tk_abc123 \
-  --style "business formal"
-# Output: Task ID: task_xxx, Task URL: https://...
-```
-
-**Immediately tell the user (natural language, NO internal terms):**
-1. Content is being generated.
-2. Online link: "You can follow the progress here: [URL]".
-3. Takes about **10–15 minutes** — free to do other things, you'll notify when ready.
-
-**All `create` parameters:**
-
-| Parameter | Short | Description | Required |
-|-----------|-------|-------------|----------|
-| --operation | -o | Operation type (see table above) | Yes |
-| --prompt | -p | Content description | Yes |
-| --api-key | -k | API Key (omit if configured) | No |
-| --language | -l | zh-CN / en-US | No |
-| --slide-count | -c | Number of PPT pages | No |
-| --template | -t | PPT template | No |
-| --ratio | -r | 16:9 / 4:3 | No |
-| --export-format | -f | Export format (slide: pptx/image/thumbnail, doc: docx/image/thumbnail, smart_draw: drawio/excalidraw) | No |
-| --file | | Attachment file path (repeatable) | No |
-| --file-token | | File token from upload (repeatable) | No |
-| --style | -s | Style preference | No |
-
-### Phase 4: Monitor and Deliver Result
-
-> **Requires `sessions_spawn`.** If unavailable, skip to **Fallback** below.
-
-**CRITICAL**: When calling `sessions_spawn`, you MUST set a timeout of at least 25 minutes to ensure the background monitor completes. The poll operation can take up to 20 minutes.
-
-Example spawn call syntax (adjust to match your OpenClaw/sessions API):
-
-```
-sessions_spawn(
-    prompt=<subagent prompt below>,
-    runTimeoutSeconds=1500  # REQUIRED: 25 minutes (1500s) to cover 20-min poll + buffer
-)
-```
-
-If your sessions API uses different parameter names (e.g., `timeout`, `maxDuration`), use the equivalent parameter to set a 25-minute (1500 second) timeout.
-
----
-
-**Subagent prompt** (it has NO conversation context).
-You MUST fill in all `{...}` variables before passing.
-
-```
-You are a background monitor for an AnyGen content generation task.
-You MUST strictly follow every instruction below. Do not skip, reorder, or improvise any step.
-
-Task ID: {task_id}
-Task URL: {task_url}
-Operation: {operation}
-Script: {script_path}
-Render Script: {render_script_path}
-Export Format: {export_format}
-Thumbnail Output: {thumbnail_output_dir}
-User Language: {user_language}
-
-IMPORTANT: This monitoring task may take up to 20 minutes. Ensure your execution timeout is at least 25 minutes.
-
-CRITICAL RULES:
-- You MUST reply in {user_language}.
-- After completing ALL steps (including sending messages to the user), your FINAL reply
-  MUST be EXACTLY "ANNOUNCE_SKIP" — nothing else. This prevents the main session from
-  sending duplicate messages.
-- Do NOT say anything beyond what is specified below. No greetings, no extra commentary.
-- NEVER include technical terms like "task_id", "file_token", "poll", "sub-agent",
-  "API", "script", "workspace", "downloaded to", file paths, or status labels
-  in any message to the user.
-
-Your job depends on the operation type:
-
-## For slide / doc / storybook operations:
-1. Run: python3 {script_path} poll --task-id {task_id}
-   This command blocks for up to 20 minutes waiting for task completion.
-   Do NOT pass --output — the file will only be downloaded when the user requests it.
-2. On success:
-   a. Download thumbnail:
-      python3 {script_path} thumbnail --task-id {task_id} --output {thumbnail_output_dir}
-   b. Send the thumbnail preview image to the user. Choose the correct method:
-      - Feishu/Lark: Two-step process via OpenAPI —
-        Step 1 (Upload image): POST https://open.feishu.cn/open-apis/im/v1/images
-          curl -X POST 'https://open.feishu.cn/open-apis/im/v1/images' \
-            -H 'Authorization: Bearer <tenant_access_token>' \
-            -F 'image_type=message' \
-            -F 'image=@{thumbnail_output_dir}/thumbnail.png'
-          This returns an image_key.
-        Step 2 (Send image message): POST https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=chat_id
-          Request body:
-          {
-            "receive_id": "<chat_id>",
-            "msg_type": "image",
-            "content": "{\"image_key\":\"<image_key>\"}"
-          }
-      - Other platforms: Send via message tool with filePath.
-   c. Send a text message to the user (in {user_language}, natural tone):
-      "Your content is ready! If you'd like me to send you the file, just let me know."
-   d. Reply EXACTLY: ANNOUNCE_SKIP
-
-## For smart_draw operation:
-1. Run: python3 {script_path} poll --task-id {task_id} --output ~/.openclaw/workspace/
-   This command blocks for up to 20 minutes waiting for task completion.
-2. On success:
-   a. Get the local file path from [RESULT] Local file: line.
-   b. Render to PNG:
-      - For drawio: bash {render_script_path} drawio <local_file> <local_file_without_ext>.png
-      - For excalidraw: bash {render_script_path} excalidraw <local_file> <local_file_without_ext>.png
-   c. Send the rendered PNG image to the user. Choose the correct method:
-      - Feishu/Lark: Two-step process via OpenAPI —
-        Step 1 (Upload image): POST https://open.feishu.cn/open-apis/im/v1/images
-          curl -X POST 'https://open.feishu.cn/open-apis/im/v1/images' \
-            -H 'Authorization: Bearer <tenant_access_token>' \
-            -F 'image_type=message' \
-            -F 'image=@<local_file_without_ext>.png'
-          This returns an image_key.
-        Step 2 (Send image message): POST https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=chat_id
-          Request body:
-          {
-            "receive_id": "<chat_id>",
-            "msg_type": "image",
-            "content": "{\"image_key\":\"<image_key>\"}"
-          }
-      - Other platforms: Send via message tool with filePath.
-   d. Send a text message to the user (in {user_language}, natural tone):
-      "Your diagram is ready! You can view and edit it online here: {task_url}"
-   e. Reply EXACTLY: ANNOUNCE_SKIP
-   f. If rendering fails:
-      Send text: "The diagram has been generated but I couldn't render a preview.
-       You can view and edit it here: {task_url}"
-      Reply EXACTLY: ANNOUNCE_SKIP
-
-## For finance / deep_research / data_analysis / website operations:
-1. Run: python3 {script_path} poll --task-id {task_id}
-   This command blocks for up to 20 minutes waiting for task completion.
-   No --output needed — results are viewed online.
-2. On success:
-   a. Send a text message to the user (in {user_language}, natural tone):
-      "Your content is ready! You can view it here: {task_url}"
-   b. Reply EXACTLY: ANNOUNCE_SKIP
-
-## Common error handling (all operations):
-- On failure:
-  a. Send a text message to the user (in {user_language}):
-     "Unfortunately the generation didn't complete successfully.
-      You can check the details here: {task_url}"
-  b. Reply EXACTLY: ANNOUNCE_SKIP
-- On timeout (20 min):
-  a. Send a text message to the user (in {user_language}):
-     "The generation is taking a bit longer than expected.
-      You can check the progress here: {task_url}"
-  b. Reply EXACTLY: ANNOUNCE_SKIP
-```
-
-Do NOT wait for the background monitor. Do NOT tell the user you launched it.
-
-**Handling the completion event.** The background monitor sends preview/result and notification to the user directly. It replies `ANNOUNCE_SKIP` as its final output, which means the main session should NOT relay or duplicate any message. If you receive a completion event with `ANNOUNCE_SKIP`, simply ignore it — the user has already been notified.
-
-#### When the User Requests the File (slide / doc only)
-
-Download, then send via the appropriate method for your IM environment:
-
-```bash
-python3 {script_path} download --task-id {task_id} --output ~/.openclaw/workspace/
-```
-
-- **Feishu/Lark**: Two-step process via OpenAPI —
-  Step 1 (Upload file): `POST https://open.feishu.cn/open-apis/im/v1/files`
-    ```
-    curl -X POST 'https://open.feishu.cn/open-apis/im/v1/files' \
-      -H 'Authorization: Bearer <tenant_access_token>' \
-      -F 'file_type=stream' \
-      -F 'file=@~/.openclaw/workspace/<output_file>' \
-      -F 'file_name=<output_file>'
-    ```
-    This returns a `file_key`. (Note: use `file_type="ppt"` for PPTX, `file_type="stream"` for DOCX.)
-  Step 2 (Send file message): `POST https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=chat_id`
-    ```json
-    {
-      "receive_id": "<chat_id>",
-      "msg_type": "file",
-      "content": "{\"file_key\":\"<file_key>\"}"
-    }
-    ```
-- **Other platforms**: Send via message tool with filePath.
-
-Follow up naturally: "Here's your file! You can also edit online at [Task URL]."
-
-#### Fallback (no background monitoring)
-
-Tell the user: "I've started generating your content. It usually takes about 10–15 minutes. You can check the progress here: [Task URL]. Let me know when you'd like me to check if it's ready!"
-
-### Phase 5: Multi-turn Conversation (Modify Completed Content)
-
-After a task has completed (Phase 4 finished), the user may request modifications such as:
-- "Change the title on page 3 to 'Product Overview'"
-- "Add a summary slide at the end"
-- "Make the color scheme warmer"
-- "Replace the chart on page 5 with a pie chart"
-
-When the user requests changes to an **already-completed** task, use the multi-turn conversation API instead of creating a new task.
-
-**IMPORTANT**: You MUST remember the `task_id` from Phase 3 throughout the conversation. When the user asks for modifications, use the same `task_id`.
-
-**Supported operations for multi-turn:** `slide`, `doc`, `smart_draw`, `storybook` (content types that produce editable files).
-
-#### Step 1: Send Modification Request
-
-```bash
-python3 scripts/anygen.py send-message --task-id {task_id} --message "Change the title on page 3 to 'Product Overview'"
-# Output: Message ID: 123, Status: processing
-```
-
-Save the returned `Message ID` — you'll need it to detect the AI reply.
-
-**Immediately tell the user** (natural language, NO internal terms):
-- "I'm working on your changes now. I'll let you know when they're done."
-
-#### Step 2: Monitor for AI Reply
-
-> **Requires `sessions_spawn`.** If unavailable, skip to **Multi-turn Fallback** below.
-
-**CRITICAL**: When calling `sessions_spawn`, you MUST set a timeout of at least 10 minutes (600 seconds). Modifications are faster than initial generation.
-
-Example spawn call syntax:
-
-```
-sessions_spawn(
-    prompt=<subagent prompt below>,
-    runTimeoutSeconds=600  # REQUIRED: 10 minutes (600s)
-)
-```
-
-**Subagent prompt** (it has NO conversation context):
-
-```
-You are a background monitor for a content modification task.
-You MUST strictly follow every instruction below. Do not skip, reorder, or improvise any step.
-
-Task ID: {task_id}
-Task URL: {task_url}
-Script: {script_path}
-User Message ID: {user_message_id}
-User Language: {user_language}
-
-IMPORTANT: This monitoring task may take up to 8 minutes. Ensure your execution timeout is at least 10 minutes.
-
-CRITICAL RULES:
-- You MUST reply in {user_language}.
-- After completing ALL steps (including sending messages to the user), your FINAL reply
-  MUST be EXACTLY "ANNOUNCE_SKIP" — nothing else. This prevents the main session from
-  sending duplicate messages.
-- Do NOT say anything beyond what is specified below. No greetings, no extra commentary.
-- NEVER include technical terms like "task_id", "message_id", "poll", "sub-agent",
-  "API", "script", "workspace", file paths, or status labels in any message to the user.
-
-Your job:
-1. Run: python3 {script_path} get-messages --task-id {task_id} --wait --since-id {user_message_id}
-   This command blocks until the AI reply is completed.
-
-2. On success (AI reply received):
-   a. Send a text message to the user (in {user_language}, natural tone):
-      "Your changes are done! You can view the updated content here: {task_url}
-       If you need further adjustments, just let me know."
-   b. Reply EXACTLY: ANNOUNCE_SKIP
-
-3. On failure / timeout:
-   a. Send a text message to the user (in {user_language}):
-      "The modification didn't complete as expected. You can check the details here: {task_url}"
-   b. Reply EXACTLY: ANNOUNCE_SKIP
-```
-
-Do NOT wait for the background monitor. Do NOT tell the user you launched it.
-
-#### Multi-turn Fallback (no background monitoring)
-
-Tell the user: "I've sent your changes. You can check the progress here: [Task URL]. Let me know when you'd like me to check if it's done!"
-
-When the user asks you to check, use:
-
-```bash
-python3 scripts/anygen.py get-messages --task-id {task_id} --limit 5
-```
-
-Look for a `completed` assistant message and relay the content to the user naturally.
-
-#### Subsequent Modifications
-
-The user can request multiple rounds of modifications. Each time, repeat Phase 5:
-1. `send-message` with the new modification request
-2. Background-monitor with `get-messages --wait`
-3. Notify the user with the online link when done
-
-All modifications use the **same `task_id`** — do NOT create a new task.
-
----
-
-## Error Handling
-
-| Error Message | Description | Solution |
-|---------------|-------------|----------|
-| invalid API key | Invalid API Key | Check if API Key is correct |
-| operation not allowed | No permission for this operation | Contact admin for permissions |
-| prompt is required | Missing prompt | Add --prompt parameter |
-| task not found | Task does not exist | Check if task_id is correct |
-| Generation timeout | Generation timed out | Recreate the task |
-
-## SmartDraw Reference
-
-| Format | --export-format | Export File | Render Command |
-|--------|-----------------|-------------|----------------|
-| Professional (default) | `drawio` | `.xml` | `render-diagram.sh drawio input.xml output.png` |
-| Hand-drawn | `excalidraw` | `.json` | `render-diagram.sh excalidraw input.json output.png` |
-
-**render-diagram.sh options:** `--scale <n>` (default: 2), `--background <hex>` (default: #ffffff), `--padding <px>` (default: 20)
-
-## Multi-turn Commands
-
-### send-message
-
-Send a modification request to an existing task:
-
-```bash
-python3 scripts/anygen.py send-message --task-id task_xxx --message "Change title on page 3"
-python3 scripts/anygen.py send-message --task-id task_xxx --message "Add a summary slide" --file-token tk_abc123
-```
-
-| Parameter | Description |
-|-----------|-------------|
-| --task-id | Task ID from create command |
-| --message, -m | Modification request text |
-| --file-token | Optional file token for reference material |
-
-### get-messages
-
-Get conversation history for a task:
-
-```bash
-python3 scripts/anygen.py get-messages --task-id task_xxx --limit 5
-python3 scripts/anygen.py get-messages --task-id task_xxx --wait --since-id 123
-```
-
-| Parameter | Description |
-|-----------|-------------|
-| --task-id | Task ID |
-| --limit | Number of messages to retrieve |
-| --wait | Block until new AI reply is completed |
-| --since-id | Only return messages after this ID |
-
-## Notes
-
-- Maximum execution time per task is 20 minutes (customizable via `--max-time`)
-- Download link is valid for 24 hours
-- Single attachment file should not exceed 10MB (after Base64 encoding)
-- Polling interval is 3 seconds
-- SmartDraw local rendering requires Chromium (auto-installed on first run)
+If the user's request spans multiple content types, handle them one at a time — read each operation guide and execute sequentially.
