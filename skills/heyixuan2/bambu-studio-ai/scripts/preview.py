@@ -18,7 +18,7 @@ import os, sys, subprocess, argparse, tempfile, json
 from common import find_blender
 
 
-def preview(model_path, output_path, views="perspective"):
+def preview(model_path, output_path, views="perspective", expected_height_mm=0):
     """Render model preview using Blender Cycles."""
     blender = find_blender()
     if not blender:
@@ -111,27 +111,75 @@ if not has_texture:
             has_vertex_colors = True
             _vc_name = obj.data.color_attributes[0].name
             break
+        if not has_vertex_colors and hasattr(obj.data, 'vertex_colors') and obj.data.vertex_colors:
+            has_vertex_colors = True
+            _vc_name = obj.data.vertex_colors[0].name
+            break
+
+# Fallback: some Blender versions don't import OBJ vertex colors into
+# color_attributes.  Parse the file directly and build the attribute.
+if not has_texture and not has_vertex_colors and ext == ".obj":
+    import numpy as _np
+    _v_colors = []
+    _has_any_color = False
+    with open(MODEL_PATH) as _f:
+        for _line in _f:
+            if _line.startswith('v '):
+                _parts = _line.split()
+                if len(_parts) >= 7:
+                    _v_colors.append((float(_parts[4]), float(_parts[5]), float(_parts[6])))
+                    _has_any_color = True
+                else:
+                    _v_colors.append(None)
+    if _has_any_color:
+        _vc_arr = _np.full((len(_v_colors), 3), 0.5, dtype=_np.float32)
+        for _ci, _c in enumerate(_v_colors):
+            if _c is not None:
+                _vc_arr[_ci] = _c
+        for obj in meshes:
+            _mesh = obj.data
+            if not _mesh.color_attributes:
+                _mesh.color_attributes.new(name="Col", type='BYTE_COLOR', domain='CORNER')
+            _cl = _mesh.color_attributes[0]
+            _n_loops = len(_mesh.loops)
+            _loop_vi = _np.empty(_n_loops, dtype=_np.int32)
+            _mesh.loops.foreach_get("vertex_index", _loop_vi)
+            _safe_vi = _np.clip(_loop_vi, 0, len(_vc_arr) - 1)
+            _sampled = _vc_arr[_safe_vi]
+            _colors_flat = _np.empty(_n_loops * 4, dtype=_np.float32)
+            _colors_flat[0::4] = _sampled[:, 0]
+            _colors_flat[1::4] = _sampled[:, 1]
+            _colors_flat[2::4] = _sampled[:, 2]
+            _colors_flat[3::4] = 1.0
+            _cl.data.foreach_set("color", _colors_flat)
+            _mesh.update()
+        has_vertex_colors = True
+        _vc_name = "Col"
+        print(f"Manually loaded {{len(_v_colors)}} vertex colors from OBJ (Blender importer missed them)")
 
 if has_texture:
     print("PBR texture loaded from model")
 elif has_vertex_colors:
-    # Vertex color material: Attribute node → Base Color
     mat = bpy.data.materials.new("VertexColor")
     mat.use_nodes = True
     nodes = mat.node_tree.nodes
     links = mat.node_tree.links
     bsdf = nodes["Principled BSDF"]
     bsdf.inputs["Roughness"].default_value = 0.4
-    attr_node = nodes.new("ShaderNodeAttribute")
-    attr_node.attribute_name = _vc_name
-    attr_node.attribute_type = 'GEOMETRY'
-    links.new(attr_node.outputs["Color"], bsdf.inputs["Base Color"])
+    try:
+        vc_node = nodes.new("ShaderNodeVertexColor")
+        vc_node.layer_name = _vc_name
+        links.new(vc_node.outputs["Color"], bsdf.inputs["Base Color"])
+    except Exception:
+        attr_node = nodes.new("ShaderNodeAttribute")
+        attr_node.attribute_name = _vc_name
+        attr_node.attribute_type = 'GEOMETRY'
+        links.new(attr_node.outputs["Color"], bsdf.inputs["Base Color"])
     for obj in meshes:
         obj.data.materials.clear()
         obj.data.materials.append(mat)
     print("Vertex colors detected — using vertex color material")
 else:
-    # Default single-color preview
     mat = bpy.data.materials.new("Preview")
     mat.use_nodes = True
     bsdf = mat.node_tree.nodes["Principled BSDF"]
@@ -177,7 +225,7 @@ bpy.context.scene.collection.objects.link(rim_obj)
 world = bpy.data.worlds.new("World")
 bpy.context.scene.world = world
 world.use_nodes = True
-world.node_tree.nodes["Background"].inputs[0].default_value = (0.12, 0.12, 0.15, 1)
+world.node_tree.nodes["Background"].inputs[0].default_value = (0.0, 0.0, 0.0, 1)
 
 bpy.context.scene.render.engine = 'CYCLES'
 bpy.context.scene.cycles.samples = 48
@@ -307,7 +355,21 @@ _shutil.rmtree(_turntable_dir, ignore_errors=True)
                 rendered = True
                 print("   ⚠️ PIL not available — saved single frame PNG instead of GIF")
             if "MODEL_INFO:" in line:
-                print(f"   {line.split('MODEL_INFO: ')[1]}")
+                info_text = line.split('MODEL_INFO: ')[1]
+                print(f"   {info_text}")
+                if expected_height_mm > 0:
+                    try:
+                        dims_str = info_text.split(" mm")[0]
+                        parts = [float(d.strip()) for d in dims_str.split(" x ")]
+                        actual_h = parts[2] if len(parts) >= 3 else max(parts)
+                        diff_pct = abs(actual_h - expected_height_mm) / expected_height_mm * 100
+                        if diff_pct > 10:
+                            print(f"   ⚠️ Height mismatch: expected {expected_height_mm:.0f}mm, "
+                                  f"got {actual_h:.1f}mm ({diff_pct:.0f}% off)")
+                        else:
+                            print(f"   ✅ Height OK: {actual_h:.1f}mm (target {expected_height_mm:.0f}mm)")
+                    except (ValueError, IndexError):
+                        pass
             if "PBR texture" in line or "No texture" in line or "preview material" in line or "Vertex colors" in line:
                 print(f"   {line.strip()}")
 
@@ -341,6 +403,8 @@ def main():
     parser.add_argument("--views", "-v", default="perspective",
                         choices=["perspective", "front", "side", "top", "all", "turntable"],
                         help="View angle (default: perspective, 'all' = 2x2 grid, 'turntable' = 360° GIF)")
+    parser.add_argument("--height", type=float, default=0,
+                        help="Expected height in mm — warns if model dimensions differ significantly")
     args = parser.parse_args()
 
     if not os.path.exists(args.model):
@@ -351,10 +415,20 @@ def main():
         ext = ".gif" if args.views == "turntable" else ".png"
         args.output = os.path.splitext(args.model)[0] + "_preview" + ext
 
-    result = preview(args.model, os.path.abspath(args.output), views=args.views)
+    result = preview(args.model, os.path.abspath(args.output), views=args.views,
+                     expected_height_mm=args.height)
     if result is None:
         sys.exit(1)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n⏹️ Cancelled.")
+        sys.exit(130)
+    except SystemExit:
+        raise
+    except Exception as e:
+        print(f"❌ Preview failed: {e}", file=sys.stderr)
+        sys.exit(1)
