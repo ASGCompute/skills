@@ -7,9 +7,70 @@ description: Clawsy is a native macOS menu bar app that gives your OpenClaw agen
 
 Clawsy connects your OpenClaw agent to a Mac via secure WebSocket (with SSH tunnel fallback). This skill file tells you everything you need to use it.
 
-**Current version:** v0.9.16  
+**Current version:** v0.9.34  
 **Download:** https://github.com/iret77/clawsy/releases/latest  
 **Platform:** macOS 14+ (Sonoma/Sequoia), Apple Silicon + Intel
+
+---
+
+## 🎯 First Connect — Targeted Onboarding via setupState
+
+When a Clawsy node connects for the first time (or after reinstall), the `hello` payload includes a `setupState` object telling you exactly what's still missing on the Mac:
+
+```json
+{
+  "setupState": {
+    "sharedFolderConfigured": true,
+    "sharedFolderPath": "~/Documents/Clawsy",
+    "finderSyncEnabled": false,
+    "accessibilityGranted": false,
+    "screenRecordingGranted": true,
+    "firstLaunch": false
+  }
+}
+```
+
+**On first connect, send your human a targeted message** (don't list everything generically):
+
+```python
+# After node connects, read setupState from the hello event in clawsy-service
+history = sessions_history(sessionKey="clawsy-service", limit=5)
+# Parse setupState from the hello envelope, then:
+
+missing = []
+if not setup["sharedFolderConfigured"]:
+    missing.append("• Shared Folder: set a folder in Clawsy Settings → Shared Folder")
+if not setup["finderSyncEnabled"]:
+    missing.append("• FinderSync: System Settings → Privacy → Extensions → Finder → enable Clawsy")
+if not setup["accessibilityGranted"]:
+    missing.append("• Accessibility: System Settings → Privacy → Accessibility → enable Clawsy")
+if not setup["screenRecordingGranted"]:
+    missing.append("• Screen Recording: System Settings → Privacy → Screen Recording → enable Clawsy")
+
+if missing:
+    msg = "✅ Clawsy connected! A few things still need your attention:\n" + "\n".join(missing)
+else:
+    msg = "✅ Clawsy is fully set up and ready!"
+# Send msg to user via your channel
+```
+
+> **Note:** `setupState` is available as of v0.9.29. On older versions, `setupState` will be absent — fall back to the generic permissions table below.
+
+---
+
+## ⚡ Auto-Setup (Clawsy Just Installed?)
+
+If you loaded this skill because Clawsy was **just installed** on a Mac and pairing is still pending (no Clawsy node shows up in `nodes list`), run this first:
+
+```bash
+curl -sL https://raw.githubusercontent.com/iret77/clawsy/main/server/install.sh | bash
+```
+
+The script auto-detects the network situation (6 scenarios: preconfigured, Tailscale, LAN, SSH-Tunnel, Public IP, Local-Fallback) and sends you a ready-to-use pairing message via `openclaw system event`. Follow its output — it tells you exactly what to relay to your human. No manual steps needed.
+
+> **Note:** The install script is fetched directly from the [Clawsy GitHub repo](https://github.com/iret77/clawsy). No executable files are included in this skill package.
+
+> Skip this section if Clawsy is already paired and a node with `platform="macos"` appears in `nodes list`.
 
 ---
 
@@ -38,11 +99,11 @@ Clawsy opens and auto-configures the connection.
 
 Wait ~30 seconds, then check for pending requests:
 ```bash
-openclaw devices list
+openclaw nodes list
 ```
 Look for a new entry. Copy its `requestId`, then approve:
 ```bash
-openclaw devices approve <requestId>
+openclaw nodes approve <requestId>
 ```
 
 ### Step 4 — Update Your Workspace
@@ -59,16 +120,14 @@ sessions_send(sessionKey="clawsy-service", timeoutSeconds=3,
 Copy the template to your workspace:
 ```bash
 cp "$(dirname $(which openclaw))/../lib/node_modules/openclaw/skills/clawsy-server/CLAWSY.md" \
-   ~/.openclaw/workspace/CLAWSY.md 2>/dev/null || \
-curl -s https://raw.githubusercontent.com/iret77/clawsy/main/server/templates/CLAWSY.md \
-   > ~/.openclaw/workspace/CLAWSY.md
+   ~/.openclaw/workspace/CLAWSY.md
 ```
 
 ### Step 5 — Verify
 
 ```bash
-openclaw devices list
-# → Should show a device with platform="macos"
+openclaw nodes list
+# → Should show a node with platform="macos"
 ```
 
 Done! Clawsy is connected. Read the rest of this SKILL.md to learn what you can do.
@@ -77,9 +136,9 @@ Done! Clawsy is connected. Read the rest of this SKILL.md to learn what you can 
 
 ## Quick Pairing Script
 
-A helper script is included at `scripts/clawsy-pair.sh`. It handles Steps 2+3 automatically:
+A helper script is available in the [Clawsy GitHub repo](https://github.com/iret77/clawsy/blob/main/tools/clawsy-pair.sh). It handles Steps 2+3 automatically:
 ```bash
-bash scripts/clawsy-pair.sh
+curl -sL https://raw.githubusercontent.com/iret77/clawsy/main/tools/clawsy-pair.sh | bash
 # → Outputs: LINK=clawsy://pair?code=...
 # → Waits for pairing, auto-approves, outputs: APPROVED=<deviceId>
 ```
@@ -95,9 +154,11 @@ bash scripts/clawsy-pair.sh
 | **Camera List** | `camera.list` | List available cameras |
 | **Clipboard Read** | `clipboard.read` | Read current clipboard content |
 | **Clipboard Write** | `clipboard.write` | Write text to the clipboard |
-| **File List** | `file.list` | List files in the shared folder |
+| **File List** | `file.list` | List files in the shared folder (supports `subPath` and `recursive: true`) |
 | **File Read** | `file.get` | Read a file from the shared folder |
 | **File Write** | `file.set` | Write a file to the shared folder |
+| **File Mkdir** | `file.mkdir` | Create a directory (with intermediate parents) |
+| **File Delete/Rmdir** | `file.delete` / `file.rmdir` | Delete a file or directory (including non-empty) |
 | **Location** | `location.get` | Get device location |
 | **Mission Control** | via `agent.status` | Show live task progress in Clawsy UI |
 | **Quick Send** | incoming | Receive text from user via `⌘⇧K` hotkey |
@@ -131,14 +192,23 @@ nodes(action="invoke", invokeCommand="camera.snap",
       invokeParamsJson='{"facing": "front"}')
 
 # File operations
+nodes(action="invoke", invokeCommand="file.list")                                          # root only
 nodes(action="invoke", invokeCommand="file.list",
-      invokeParamsJson='{"path": "."}')
+      invokeParamsJson='{"subPath": "music/"}')                                            # specific subfolder
+nodes(action="invoke", invokeCommand="file.list",
+      invokeParamsJson='{"recursive": true}')                                              # all files, all subfolders (max depth 5)
 
 nodes(action="invoke", invokeCommand="file.get",
       invokeParamsJson='{"name": "report.pdf"}')
 
 nodes(action="invoke", invokeCommand="file.set",
       invokeParamsJson='{"name": "output.txt", "content": "<base64-encoded>"}')
+
+nodes(action="invoke", invokeCommand="file.mkdir",
+      invokeParamsJson='{"name": "my-folder/subfolder"}')                                  # creates all intermediate dirs
+
+nodes(action="invoke", invokeCommand="file.delete",
+      invokeParamsJson='{"name": "old-file.txt"}')                                        # works for files and directories
 
 # Location
 nodes(action="invoke", invokeCommand="location.get")
@@ -259,6 +329,33 @@ When the user presses `⌘⇧K` and sends a message:
 ## Shared Folder & .clawsy Rules
 
 Clawsy configures a shared folder (default: `~/Documents/Clawsy`). Use `file.list`, `file.get`, `file.set` to interact with it.
+
+### ⚠️ Large File Transfers (>50 KB)
+
+The `nodes` tool passes parameters as JSON strings — this limits `file.set` to roughly 50 KB base64 payload. For larger files, use the `openclaw nodes invoke` CLI directly:
+
+```bash
+# Find the node ID first
+openclaw nodes list
+
+# Send a large file to the shared folder
+PARAMS=$(python3 -c "
+import base64, json
+with open('/path/to/file.png', 'rb') as f:
+    content = base64.b64encode(f.read()).decode()
+print(json.dumps({'name': 'filename.png', 'content': content}))
+")
+openclaw nodes invoke \
+  --node <NODE_ID> \
+  --command file.set \
+  --params "$PARAMS" \
+  --invoke-timeout 30000
+```
+
+This works for files up to several MB. For the best avatar/image quality, resize to 512×512 px JPEG before sending (~37 KB).
+
+**Reading large files** from the shared folder works fine via the `nodes` tool — `file.get` returns base64 content that the tool handles correctly.
+
 
 ### .clawsy Manifest Files
 
