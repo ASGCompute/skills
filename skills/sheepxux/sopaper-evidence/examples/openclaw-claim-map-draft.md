@@ -6,9 +6,9 @@ This example shows the intended output shape from `scripts/bootstrap_claim_map.p
 
 | Claim ID | Claim | Status | Evidence IDs | Notes |
 | --- | --- | --- | --- | --- |
-| C1 | OpenClaw addresses manipulation tasks that require multiple system components. | unsupported |  | No matching evidence found. Review the claim wording or add supporting sources. |
-| C2 | OpenClaw can be positioned against recent robotics and embodied systems papers. | unsupported |  | No matching evidence found. Review the claim wording or add supporting sources. |
-| C3 | OpenClaw improves long-horizon manipulation performance over strong baselines. | unsupported |  | No matching evidence found. Review the claim wording or add supporting sources. |
+| C1 | OpenClaw addresses manipulation tasks that require multiple system components. | unsupported | E01, E02 | Potential title-level leads exist, but no reviewed evidence statement supports this claim yet. |
+| C2 | OpenClaw can be positioned against recent robotics and embodied systems papers. | unsupported | E01, E02 | Potential title-level leads exist, but no reviewed evidence statement supports this claim yet. |
+| C3 | OpenClaw improves long-horizon manipulation performance over strong baselines. | unsupported | E01, E02 | Potential title-level leads exist, but no reviewed evidence statement supports this claim yet. |
 
 ## Evidence notes
 
