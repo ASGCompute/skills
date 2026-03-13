@@ -188,7 +188,7 @@ Before translating chunks:
    - Splits at markdown block boundaries to preserve structure
    - If a single block exceeds the threshold, falls back to line splitting, then word splitting
 4. **Assemble translation prompt**:
-   - Main agent reads `01-analysis.md` (if exists) and assembles shared context using Part 1 of [references/subagent-prompt-template.md](references/subagent-prompt-template.md) — inlining content background, merged glossary, and comprehension challenges
+   - Main agent reads `01-analysis.md` (if exists) and assembles shared context using Part 1 of [references/subagent-prompt-template.md](references/subagent-prompt-template.md) — inlining the resolved style preset (from `--style` flag, EXTEND.md `style` setting, or default `storytelling`), content background, merged glossary, and comprehension challenges
    - Save as `02-prompt.md` in the output directory (shared context only, no task instructions)
 5. **Draft translation via subagents** (if Agent tool available):
    - Spawn one subagent **per chunk**, all in parallel (Part 2 of the template)
@@ -215,7 +215,7 @@ Before translating chunks:
 - **Image-language awareness**: Preserve image references exactly during translation, but after the translation is complete, review referenced images and check whether their likely main text language still matches the translated article language
 - **Frontmatter transformation**: If the source has YAML frontmatter, preserve it in the translation with these changes: (1) Rename metadata fields that describe the *source* article — `url`→`sourceUrl`, `title`→`sourceTitle`, `description`→`sourceDescription`, `author`→`sourceAuthor`, `date`→`sourceDate`, and any similar origin-metadata fields — by adding a `source` prefix (camelCase). (2) Translate the values of text fields (title, description, etc.) and add them as new top-level fields. (3) Keep other fields (tags, categories, custom fields) as-is, translating their values where appropriate
 - **Respect original**: Maintain original meaning and intent; do not add, remove, or editorialize — but sentence structure and imagery may be adapted freely to serve the meaning
-- **Translator's notes**: For terms, concepts, or cultural references that target readers may not understand — due to jargon, cultural gaps, or domain-specific knowledge — add a concise explanatory note in parentheses immediately after the term. The note should explain *what it means* in plain language, not just provide the English original. Format: `译文（English original，通俗解释）`. Calibrate annotation depth to the target audience: general readers need more notes than technical readers. Only add notes where genuinely needed; do not over-annotate obvious terms.
+- **Translator's notes**: For terms, concepts, or cultural references that target readers may not understand — due to jargon, cultural gaps, or domain-specific knowledge — add a concise explanatory note in parentheses immediately after the term. The note should explain *what it means* in plain language, not just provide the English original. Format: `译文（English original，通俗解释）`. Calibrate annotation depth to the target audience: general readers need more notes than technical readers. For short texts (< 5 sentences), further reduce annotations — only annotate non-common terms that the target audience is unlikely to know; skip terms that are widely recognized or self-explanatory in context. Only add notes where genuinely needed; do not over-annotate obvious terms.
 
 #### Quick Mode
 
@@ -224,7 +224,7 @@ Translate directly → save to `translation.md`. No analysis file, but still app
 #### Normal Mode
 
 1. **Analyze** → `01-analysis.md` (domain, tone, audience, terminology, reader comprehension challenges, figurative language & metaphor mapping)
-2. **Assemble prompt** → `02-prompt.md` (translation instructions with inlined context)
+2. **Assemble prompt** → `02-prompt.md` (translation instructions with inlined style preset, content background, glossary, and comprehension challenges)
 3. **Translate** (following `02-prompt.md`) → `translation.md`
 
 After completion, prompt user: "Translation saved. To further review and polish, reply **继续润色** or **refine**."

@@ -121,7 +121,7 @@ Implicit assumptions: [unstated premises]
 
 ## Step 2: Assemble Translation Prompt
 
-Main agent reads `01-analysis.md` and assembles a complete translation prompt using [references/subagent-prompt-template.md](subagent-prompt-template.md). Inline content background, merged glossary, and comprehension challenges into the prompt. Save to `02-prompt.md`.
+Main agent reads `01-analysis.md` and assembles a complete translation prompt using [references/subagent-prompt-template.md](subagent-prompt-template.md). Inline the resolved style preset (from `--style` flag, EXTEND.md `style` setting, or default `storytelling`), content background, merged glossary, and comprehension challenges into the prompt. Save to `02-prompt.md`.
 
 This prompt is used by the subagent (chunked) or by the main agent itself (non-chunked).
 
