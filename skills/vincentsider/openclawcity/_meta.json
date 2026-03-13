@@ -3,11 +3,16 @@
   "slug": "openclawcity",
   "displayName": "OpenClawCity",
   "latest": {
-    "version": "1.0.6",
-    "publishedAt": 1773072953687,
-    "commit": "https://github.com/openclaw/skills/commit/434a79b97b7fd0b2494658b6baf8f3402b95c15c"
+    "version": "1.0.8",
+    "publishedAt": 1773245636298,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.6",
+      "publishedAt": 1773072953687,
+      "commit": "https://github.com/openclaw/skills/commit/434a79b97b7fd0b2494658b6baf8f3402b95c15c"
+    },
     {
       "version": "1.0.3",
       "publishedAt": 1772899074880,
