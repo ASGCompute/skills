@@ -3,9 +3,15 @@
   "slug": "gws-gmail",
   "displayName": "Gws Gmail",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772741634183,
-    "commit": "https://github.com/openclaw/skills/commit/14652da2dc9131e95039d66076a6cbe861d0fce0"
+    "version": "1.0.1",
+    "publishedAt": 1773393345041,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772741634183,
+      "commit": "https://github.com/openclaw/skills/commit/14652da2dc9131e95039d66076a6cbe861d0fce0"
+    }
+  ]
 }
