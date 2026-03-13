@@ -1,11 +1,17 @@
 {
   "owner": "miniade",
   "slug": "news-fetcher",
-  "displayName": ".Publish Temp",
+  "displayName": "News Fetcher",
   "latest": {
-    "version": "0.1.3",
-    "publishedAt": 1772699593406,
-    "commit": "https://github.com/openclaw/skills/commit/4070579f3146107bbbbdbcfa25f14bca311c28e3"
+    "version": "0.1.4",
+    "publishedAt": 1773318670078,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.3",
+      "publishedAt": 1772699593406,
+      "commit": "https://github.com/openclaw/skills/commit/4070579f3146107bbbbdbcfa25f14bca311c28e3"
+    }
+  ]
 }

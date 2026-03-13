@@ -1,39 +1,51 @@
 ---
 name: news-fetcher
-description: Fetches, processes, and clusters news articles from multiple RSS/HTML sources with deduplication and summarization
-argument-hint: "[query or config options]"
-user-invocable: true
-license: MIT
-compatibility: Requires news-fetcher Python package (pip install news-fetcher)
-metadata:
-  author: News Fetcher Team
-  version: 0.1.3
-  homepage: https://github.com/miniade/news-fetcher
-  source: https://github.com/miniade/news-fetcher
-  pypi: https://pypi.org/project/news-fetcher
-  tags: news, rss, aggregation, summarization, clustering
+description: Install, configure, validate, and run the news-fetcher Python CLI for aggregating RSS/Atom and HTML news sources with deduplication, clustering, ranking, source diversity, and summaries. Use when an agent needs to fetch news, create or validate a config, troubleshoot news-fetcher installation, or produce JSON/Markdown/CSV/RSS output from multiple sources.
 ---
 
-# News Fetcher Skill
+# News Fetcher
 
-Use this skill when the user wants to:
-- Fetch and aggregate news from multiple RSS feeds or HTML sources
-- Remove duplicate articles covering the same story
-- Group related articles into clusters/topics
-- Get ranked news with diverse perspectives
-- Generate summaries of top news stories
+Use this skill to get a working `news-fetcher` installation and run it correctly.
 
-## Quick Start
+## Important
 
-### Step 1: Install the Package
+- Installing the ClawHub skill does **not** install the Python package.
+- Install the Python package separately with `pip`.
+- Put global options **before** `run`.
+
+Correct:
 
 ```bash
-pip install news-fetcher==0.1.3
+news-fetcher --config config.yaml --limit 10 run
 ```
 
-### Step 2: Create Configuration
+Wrong:
 
-Create a `config.yaml` file:
+```bash
+news-fetcher run --config config.yaml --limit 10
+```
+
+## Minimal working install
+
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+pip install --upgrade pip
+pip install "git+https://github.com/miniade/news-fetcher.git@v0.1.4"
+news-fetcher version
+```
+
+Expect `news-fetcher version 0.1.4`.
+
+## Minimal working config
+
+Generate a starter config:
+
+```bash
+news-fetcher config example > config.yaml
+```
+
+Or create one manually:
 
 ```yaml
 sources:
@@ -42,15 +54,22 @@ sources:
     weight: 1.0
     type: rss
 
-  - name: Reuters
+  - name: Reuters Tech
     url: https://www.reutersagency.com/feed/?best-topics=tech
     weight: 1.2
     type: rss
+
+  - name: Example HTML Source
+    url: https://example.com/news
+    weight: 0.9
+    type: html
+    selector: main article
 
 thresholds:
   similarity: 0.8
   min_score: 0.3
   cluster_size: 2
+  max_per_source: 3
 
 weights:
   content: 0.6
@@ -58,169 +77,77 @@ weights:
   publish_time: 0.2
 ```
 
-### Step 3: Fetch News
+Validate it:
 
 ```bash
-news-fetcher fetch --config config.yaml --limit 20
+news-fetcher config validate config.yaml
 ```
 
-### Step 4: Output Results
+## Common commands
+
+Run with a config:
 
 ```bash
-news-fetcher fetch --config config.yaml --format markdown --output news.md
+news-fetcher --config config.yaml --limit 20 run
 ```
 
-## Installation
-
-**Install from PyPI (recommended):**
-```bash
-pip install news-fetcher==0.1.3
-```
-
-**Source & Verification:**
-- PyPI: https://pypi.org/project/news-fetcher/0.1.3/
-- Source: https://github.com/miniade/news-fetcher/tree/v0.1.3
-- Verify integrity: `pip install news-fetcher==0.1.3 --check-hash-mode=module`
-
-**Install from source:**
-```bash
-git clone https://github.com/miniade/news-fetcher.git
-cd news-fetcher
-pip install -e .
-```
-
-## Basic Usage
-
-### Fetch news with default config
+Write Markdown output:
 
 ```bash
-news-fetcher fetch --config config.yaml --limit 20
+news-fetcher --config config.yaml --format markdown --output news.md run
 ```
 
-### Fetch specific sources
+Filter by time:
 
 ```bash
-news-fetcher fetch --sources "http://feeds.bbci.co.uk/news/rss.xml" --limit 10
+news-fetcher --config config.yaml --since 2026-03-01T00:00:00 run
 ```
 
-### Output as Markdown
+Raise the score threshold:
 
 ```bash
-news-fetcher fetch --config config.yaml --format markdown --output news.md
+news-fetcher --config config.yaml --min-score 0.5 run
 ```
 
-## Configuration
+Override sources directly from the CLI:
 
-### Full Configuration Example
+```bash
+news-fetcher --sources "http://feeds.bbci.co.uk/news/rss.xml,https://news.ycombinator.com/rss" --limit 10 run
+```
+
+## HTML sources
+
+For `type: html` sources, set `selector` when the site does not use clean `<article>` blocks.
+
+Example:
 
 ```yaml
 sources:
-  - name: BBC News
-    url: http://feeds.bbci.co.uk/news/rss.xml
-    weight: 1.0
-    type: rss
-
-  - name: Reuters
-    url: https://www.reutersagency.com/feed/?best-topics=tech
-    weight: 1.2
-    type: rss
-
-  - name: TechCrunch
-    url: https://techcrunch.com/feed/
-    weight: 0.9
-    type: rss
-
-thresholds:
-  similarity: 0.8        # SimHash similarity threshold for duplicates
-  min_score: 0.3         # Minimum article score to include
-  cluster_size: 2        # Minimum articles per cluster
-
-weights:
-  content: 0.6           # Content relevance weight
-  source: 0.2            # Source authority weight
-  publish_time: 0.2      # Recency weight
+  - name: Example HTML Source
+    url: https://example.com/news
+    type: html
+    selector: .story-card
 ```
 
-### Source Types
+## Troubleshooting
 
-- `rss`: RSS/Atom feeds (most common)
-- `html`: HTML pages requiring extraction
-
-### Weights and Thresholds
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `similarity` | 0.8 | SimHash threshold for duplicates (0-1) |
-| `min_score` | 0.3 | Minimum article score to include |
-| `cluster_size` | 2 | Minimum articles to form cluster |
-| `content` | 0.6 | Content relevance weight |
-| `source` | 0.2 | Source authority weight |
-| `publish_time` | 0.2 | Recency weight |
-
-## Advanced Options
+If `news-fetcher` is missing after installing the skill, install the Python package:
 
 ```bash
-# Fetch with diversity control
-news-fetcher fetch --config config.yaml --diversity 0.7 --limit 30
-
-# Fetch recent articles only
-news-fetcher fetch --config config.yaml --since 2024-01-01T00:00:00
-
-# Apply minimum score filter
-news-fetcher fetch --config config.yaml --min-score 0.5
-
-# Use local fixtures for testing
-news-fetcher fetch --fixtures ./tests/fixtures/sample-feed.xml
+pip install "git+https://github.com/miniade/news-fetcher.git@v0.1.4"
 ```
 
-## Configuration Management
+If config validation fails, run:
 
 ```bash
-# Validate configuration
 news-fetcher config validate config.yaml
-
-# Generate example configuration
-news-fetcher config example --output example-config.yaml
 ```
 
-## How It Works
+If results are too sparse, lower `thresholds.min_score` or raise `thresholds.max_per_source`.
 
-### Processing Pipeline
+## References
 
-1. **Fetch**: Retrieves articles from configured RSS/HTML sources
-2. **Deduplicate**: Uses SimHash algorithm to detect near-duplicates
-3. **Cluster**: Groups related articles using HDBSCAN density-based clustering
-4. **Rank**: Scores articles by combining Reddit-style hotness with source authority
-5. **Diversify**: Selects diverse articles using Maximal Marginal Relevance (MMR)
-6. **Summarize**: Generates extractive summaries for top stories
-
-## When to Use
-
-Invoke this skill when:
-- User asks for news aggregation: "get me the top tech news"
-- User wants clustered news: "organize these news articles by topic"
-- User needs news summaries: "summarize the top headlines"
-- User mentions multiple news sources: "fetch news from BBC, Reuters, and CNN"
-- User wants to remove duplicates: "find unique news stories from these feeds"
-
-## Error Handling
-
-The tool handles various error conditions:
-- Network errors: Graceful fallback with cached data
-- Parse errors: Skip invalid articles, continue processing
-- Empty results: Return informative message
-- Configuration errors: Validate before processing
-
-## Additional Resources
-
-For detailed technical documentation, see:
-- [README.md](README.md) - Project overview and installation
-- [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture
-- [FEATURES.md](FEATURES.md) - Feature breakdown
-
-## Source & Provenance
-
-- **Source Code**: https://github.com/miniade/news-fetcher
-- **PyPI Package**: https://pypi.org/project/news-fetcher
-- **License**: MIT
-- **Current Version**: 0.1.3
+- Tagged source install: `pip install "git+https://github.com/miniade/news-fetcher.git@v0.1.4"`
+- PyPI (optional, if published): https://pypi.org/project/news-fetcher/
+- Source: https://github.com/miniade/news-fetcher
+- Version targeted by this skill: 0.1.4
