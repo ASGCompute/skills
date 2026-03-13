@@ -11,7 +11,6 @@ def main():
     args = sys.argv[1:]
     if not args or args[0] in ('-h', '--help'):
         print("Usage: researcher.py <topic> [-n <num>] [-q <num_queries>] [--agent <id>]")
-        print("\nBreaks topic into multiple queries, retrieves full content, reports outcomes.")
         sys.exit(0)
 
     n, nq, agent = 5, 3, 'my-agent'
@@ -39,7 +38,6 @@ def main():
                 sel = post(f'/search/{search_id}/select', dict(url=r['url'], position=i, provider=r['provider']))
                 content = (sel.get('content') or '')[:500]
                 if content: print(f"      Preview: {content[:200]}...")
-                post(f'/search/{search_id}/outcome', dict(success=True, selection_id=sel['selection_id']))
         print()
 
 if __name__ == '__main__': main()

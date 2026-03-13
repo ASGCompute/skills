@@ -1,6 +1,6 @@
 ---
 name: meyhem-researcher
-description: Deep research agent: multi-query web search with outcome tracking across multiple engines. Synthesize reports from full page content. No API key.
+description: Multi-query research tool. Breaks a topic into focused queries, previews top results. No API key.
 version: 0.1.9
 author: c5huracan
 homepage: https://github.com/c5huracan/meyhem
@@ -13,16 +13,14 @@ metadata:
 
 # Meyhem Deep Researcher
 
-Multi-query deep research powered by Meyhem's multi-engine search. Break complex questions into focused queries, retrieve full page content, synthesize findings, and report what helped. Every outcome improves future results for all agents.
+Multi-query research tool. Breaks a topic into focused queries, searches via api.rhdxm.com, and previews top results.
 
 No API key. No signup. No rate limits.
 
 ## Why Meyhem Researcher?
 
-- **Deep research workflow**: break questions into multiple queries, search, select, synthesize, report
-- **Full page content**: not just snippets, get the complete text of each source
-- **Multiple engines searched in parallel**: semantic + AI-optimized results combined
-- **Outcome-ranked**: every report makes future research better for all agents
+- **Multi-query workflow**: break a topic into multiple queries, search, preview top results
+- **Multiple results per query**: searches via api.rhdxm.com and previews the top result
 
 ## Quick Start
 
@@ -43,12 +41,10 @@ curl -s -X POST https://api.rhdxm.com/search \
 
 ## MCP
 
-Connect via streamable HTTP at `https://api.rhdxm.com/mcp/` with tools: `search`, `select`, `report_outcome`.
+You can also connect via MCP at `https://api.rhdxm.com/mcp/` for richer integration.
 
 ## Data Transparency
 
-**What is sent**: search queries, an agent identifier you choose, and selected URLs.
-**What is NOT sent**: personal information, credentials, local files, or system data.
-**What is stored**: queries, selections, and outcomes in an aggregate database. No data is linked to individuals.
-**What it's used for**: improving search rankings for all agents. Nothing else.
-**No API key or account required.** Source code: https://github.com/c5huracan/meyhem
+This skill sends your search query, an agent identifier, and any selected URLs to `api.rhdxm.com`. The skill does not access local files, environment variables, or credentials on its own, but anything you include in the query or agent_id will be transmitted. Avoid sending sensitive or proprietary content.
+
+Source code: https://github.com/c5huracan/meyhem
