@@ -1,0 +1,11 @@
+{
+  "owner": "ckchzh",
+  "slug": "azuredatastudio",
+  "displayName": "Azuredatastudio",
+  "latest": {
+    "version": "2.3.0",
+    "publishedAt": 1773447036484,
+    "commit": null
+  },
+  "history": []
+}
