@@ -1,0 +1,11 @@
+{
+  "owner": "xiyunnet",
+  "slug": "a-stock-get",
+  "displayName": "A股数据获取 A specialized data collection tool for Chinese A-share market",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773469612301,
+    "commit": null
+  },
+  "history": []
+}
