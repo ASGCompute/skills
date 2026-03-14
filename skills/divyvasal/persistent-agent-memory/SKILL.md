@@ -1,6 +1,6 @@
 ---
 name: persistent-agent-memory
-description: "Add persistent memory to any agent so it can remember prior work, maintain context across sessions, and continue long-running workflows. Use when: (1) remembering facts or preferences for later, (2) recalling stored memories by topic or intent, (3) forgetting/removing memories matching a query. NOT for: web search, file system search, or code search — use other tools for those."
+description: "Add persistent memory to any agent so it can remember prior work, maintain context across sessions, and continue long-running workflows."
 metadata:
   {
     "openclaw":
@@ -17,6 +17,10 @@ metadata:
 # Persistent Agent Memory
 
 Memory storage and retrieval powered by Coral Bricks. Store facts, preferences, and context; retrieve them later by meaning. All memories are stored in the default collection.
+
+**Use when:** (1) remembering facts or preferences for later, (2) recalling stored memories by topic or intent, (3) forgetting/removing memories matching a query.
+
+**NOT for:** web search, file system search, or code search — use other tools for those.
 
 ## Setup
 
