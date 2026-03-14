@@ -1,0 +1,11 @@
+{
+  "owner": "openwaygate",
+  "slug": "youtube-playlist-yutu",
+  "displayName": "YouTube Playlist",
+  "latest": {
+    "version": "0.10.6-3",
+    "publishedAt": 1773335136799,
+    "commit": null
+  },
+  "history": []
+}
