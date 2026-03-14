@@ -22,19 +22,21 @@
 
 ### OpenClaw
 
-下载本项目到本地后，解压到 OpenClaw 的 SKILLS 目录下重启会话生效。
+下载本项目到本地后，将 `SKILL.md` 文件和 `reference/` 目录复制到 OpenClaw 的 SKILLS 目录下重启会话生效。
 
 ### Claude Code
 
 ```bash
 # 项目级别
-cp -r skills/ .claude/skills/
+cp SKILL.md .claude/skills/postgres.md
+cp -r reference/ .claude/skills/postgres-reference/
 
 # 或全局级别
-cp -r skills/ ~/.claude/skills/
+cp SKILL.md ~/.claude/skills/postgres.md
+cp -r reference/ ~/.claude/skills/postgres-reference/
 ```
 
-根 `SKILL.md` 可作为统一入口使用，也可以直接使用各子 skill。
+使用 `/postgres` 调用，它会根据你的意图自动路由到相应的功能模块。
 
 ## 使用示例
 

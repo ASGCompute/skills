@@ -18,16 +18,16 @@ description: |
 
 ## 意图识别与路由
 
-根据用户输入判断意图，然后直接按对应子 skill 的指令执行。如果意图不明确，先询问用户想做什么。
+根据用户输入判断意图，然后直接按对应参考文档的指令执行。如果意图不明确，先询问用户想做什么。
 
-| 用户意图 | 执行 | 典型说法 |
+| 用户意图 | 参考文档 | 典型说法 |
 |---|---|---|
-| 安装部署 | 按 `setup-postgres-mcp` 执行 | 安装、部署、配置、第一次用、连不上 |
-| 健康检查 | 按 `pg-health` 执行 | 健康检查、数据库状态、性能监控、连接数 |
-| 索引优化 | 按 `pg-index-tuning` 执行 | 索引优化、慢查询、性能调优、建索引 |
-| 查询计划 | 按 `pg-query-plan` 执行 | 执行计划、EXPLAIN、查询分析、为什么慢 |
-| 模式查询 | 按 `pg-schema` 执行 | 表结构、字段、关系、生成 SQL |
-| 执行 SQL | 按 `pg-execute` 执行 | 执行、查询、更新、插入、删除 |
+| 安装部署 | `reference/setup-postgres-mcp/setup-postgres-mcp.md` | 安装、部署、配置、第一次用、连不上 |
+| 健康检查 | `reference/pg-health/pg-health.md` | 健康检查、数据库状态、性能监控、连接数 |
+| 索引优化 | `reference/pg-index-tuning/pg-index-tuning.md` | 索引优化、慢查询、性能调优、建索引 |
+| 查询计划 | `reference/pg-query-plan/pg-query-plan.md` | 执行计划、EXPLAIN、查询分析、为什么慢 |
+| 模式查询 | `reference/pg-schema/pg-schema.md` | 表结构、字段、关系、生成 SQL |
+| 执行 SQL | `reference/pg-execute/pg-execute.md` | 执行、查询、更新、插入、删除 |
 
 ## 全局约束
 
