@@ -3,9 +3,15 @@
   "slug": "skill-shell",
   "displayName": "Skill Shell",
   "latest": {
-    "version": "0.2.0",
-    "publishedAt": 1773251048180,
-    "commit": "https://github.com/openclaw/skills/commit/27a446de16c87c191fcc997daaa9da89d9470184"
+    "version": "0.2.2",
+    "publishedAt": 1773335957643,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.2.0",
+      "publishedAt": 1773251048180,
+      "commit": "https://github.com/openclaw/skills/commit/27a446de16c87c191fcc997daaa9da89d9470184"
+    }
+  ]
 }

@@ -94,6 +94,19 @@ Distrust skills that:
 - add hooks, auto-reminders, or background behavior without clear value
 - increase token usage more than they improve outcomes
 
+Reject immediately or escalate hard if static review finds any of these red flags:
+- `curl` / `wget` to unclear or unrelated endpoints
+- unexplained data exfiltration to external servers
+- requests for credentials, tokens, API keys, browser cookies, or sessions
+- reads of `~/.ssh`, `~/.aws`, `~/.config`, or similar credential locations without a very clear reason
+- reads of `MEMORY.md`, `USER.md`, `SOUL.md`, or `IDENTITY.md` from outside the normal workspace purpose
+- `eval(...)` / `exec(...)` with external or untrusted input
+- unexplained base64 decode / encoded payload execution / obfuscated code
+- network calls to raw IPs instead of understandable domains
+- silent package installs or background downloads not clearly documented
+- writes or modifications outside the workspace without explicit need
+- requests for elevated / sudo privileges
+
 ## Promotion rule
 
 When a reviewed skill has useful ideas but poor packaging, do not install it by default.
@@ -102,6 +115,13 @@ Instead, absorb the useful parts into the local workflow:
 - workflow rules -> `AGENTS.md`
 - tool gotchas -> `TOOLS.md`
 - session-specific lessons -> `memory/YYYY-MM-DD.md`
+
+Typical examples of "absorb, don't install":
+- good red-flag lists
+- trust heuristics
+- repo vetting commands
+- review templates
+- decision labels that improve reporting but do not require a separate skill
 
 ## Checklist
 
@@ -112,11 +132,13 @@ Read `references/checklist.md` when evaluating a candidate skill.
 Report with this structure:
 - conclusion
 - skill type
+- source / version / visible popularity signals
 - static review result
 - dynamic validation required or not
 - environment sensitivity level
 - what it really does
 - what is actually in the package
+- red flags (if any)
 - risks
 - fit with current workflow
 - recommendation
@@ -127,6 +149,12 @@ Preferred recommendation labels:
 - absorb ideas only
 - postpone
 - reject
+
+When helpful, also classify overall risk as:
+- LOW
+- MEDIUM
+- HIGH
+- EXTREME
 
 Keep the answer direct. Prefer decision quality over enthusiasm.
 
