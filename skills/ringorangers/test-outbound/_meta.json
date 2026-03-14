@@ -1,0 +1,11 @@
+{
+  "owner": "ringorangers",
+  "slug": "test-outbound",
+  "displayName": "我的测试",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773296119487,
+    "commit": null
+  },
+  "history": []
+}
