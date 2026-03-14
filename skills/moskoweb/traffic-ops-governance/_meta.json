@@ -1,0 +1,11 @@
+{
+  "owner": "moskoweb",
+  "slug": "traffic-ops-governance",
+  "displayName": "Traffic Ops Governance",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773496526912,
+    "commit": null
+  },
+  "history": []
+}
