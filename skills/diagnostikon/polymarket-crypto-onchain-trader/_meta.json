@@ -1,0 +1,11 @@
+{
+  "owner": "diagnostikon",
+  "slug": "polymarket-crypto-onchain-trader",
+  "displayName": "Crypto & On-Chain Trader",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773475469295,
+    "commit": null
+  },
+  "history": []
+}
