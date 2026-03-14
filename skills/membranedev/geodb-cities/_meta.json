@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "geodb-cities",
+  "displayName": "Geodb Cities",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1773284547347,
+    "commit": null
+  },
+  "history": []
+}
