@@ -1,0 +1,11 @@
+{
+  "owner": "financial-ai-analyst",
+  "slug": "mx-stockpick",
+  "displayName": "MX Stock Pick",
+  "latest": {
+    "version": "1.0.4",
+    "publishedAt": 1773412217623,
+    "commit": null
+  },
+  "history": []
+}
