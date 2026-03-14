@@ -1,0 +1,11 @@
+{
+  "owner": "ckchzh",
+  "slug": "terraform-helper",
+  "displayName": "Terraform Helper",
+  "latest": {
+    "version": "2.3.0",
+    "publishedAt": 1773447284181,
+    "commit": null
+  },
+  "history": []
+}
