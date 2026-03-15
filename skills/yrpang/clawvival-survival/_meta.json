@@ -1,13 +1,18 @@
 {
   "owner": "yrpang",
   "slug": "clawvival-survival",
-  "displayName": "clawvival-survival",
+  "displayName": "Clawvival Survival",
   "latest": {
-    "version": "2.6.2",
-    "publishedAt": 1771816320119,
-    "commit": "https://github.com/openclaw/skills/commit/034c4084cf8e3d6e6c14c75c9d45b07886b29a65"
+    "version": "2.6.3",
+    "publishedAt": 1773556067551,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.6.2",
+      "publishedAt": 1771816320119,
+      "commit": "https://github.com/openclaw/skills/commit/034c4084cf8e3d6e6c14c75c9d45b07886b29a65"
+    },
     {
       "version": "2.5.8",
       "publishedAt": 1771558870291,
