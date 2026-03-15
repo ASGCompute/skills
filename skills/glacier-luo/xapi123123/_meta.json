@@ -3,11 +3,16 @@
   "slug": "xapi123123",
   "displayName": "xAPI",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1773215717756,
-    "commit": "https://github.com/openclaw/skills/commit/41a9c0859ce9f8ba4d37f096fffa99a13f8ad8bb"
+    "version": "1.0.2",
+    "publishedAt": 1773390926325,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1773215717756,
+      "commit": "https://github.com/openclaw/skills/commit/41a9c0859ce9f8ba4d37f096fffa99a13f8ad8bb"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1770388095235,
