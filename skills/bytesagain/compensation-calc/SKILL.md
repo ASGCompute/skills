@@ -1,11 +1,6 @@
 ---
 name: compensation-calc
-version: 1.0.0
-description: "薪酬计算器。薪资计算、奖金方案、股权激励、市场对标、薪资谈判、总包计算。Compensation calculator with salary, bonus, equity, benchmarking, negotiation, total comp. 薪酬、工资、奖金、股权、谈薪。Use when calculating or designing compensation."
-author: BytesAgain <hello@bytesagain.com>
-homepage: https://bytesagain.com
-tags: [compensation, salary, bonus, equity, benchmark, negotiate, 薪酬, 工资, 奖金, 股权]
-category: hr-management
+description: "薪酬计算器。薪资计算、奖金方案、股权激励、市场对标、薪资谈判、总包计算。Compensation calculator with salary, bonus, equity, benchmarking, negotiation, total comp. 薪酬、工资、奖金、股权、谈薪。Use when calculating or designing compensation. Triggers on: compensation calc."
 ---
 
 # Compensation Calc — 薪酬计算器
@@ -33,3 +28,17 @@ bash scripts/comp.sh benchmark "高级前端 上海"
 bash scripts/comp.sh negotiate "期望涨幅30%"
 bash scripts/comp.sh total "月薪3万 年终3个月 期权1万股"
 ```
+---
+💬 Feedback & Feature Requests: https://bytesagain.com/feedback
+Powered by BytesAgain | bytesagain.com
+
+## How It Works
+
+Reads input, processes with built-in logic, outputs structured results.
+
+## Tips
+
+- Run `compensation-calc help` for all commands
+- No API keys required
+- Works offline
+
