@@ -14,23 +14,21 @@ Discord Toolkit gives you full programmatic control over your Discord server. Se
 
 ## Requirements
 
-- `DISCORD_BOT_TOKEN` — Discord bot token
-- Create a bot at https://discord.com/developers/applications
+- `list-guilds` — List Guilds
+- `list-channels` — List Channels
+- `send-message` — Send Message
+- `send-embed` — Send Embed
+- `channel-messages` — Channel Messages
+- `list-members` — List Members
+- `guild-info` — Guild Info
+- `get-user` — Get User
+- `create-channel` — Create Channel
+- Create a bot at [configured-endpoint]
 - Enable required intents (Server Members, Message Content) in bot settings
 - Invite bot to your server with appropriate permissions
 
 ## Commands
 
-- `channel-messages` — Error: --channel-id required
-- `create-channel` — {} ({})'.format(ch.get('name',''), ch.get('id','')))
-- `env` — ff0000"
-- `get-user` — Execute get-user
-- `guild-info` — Error: --guild-id required
-- `list-channels` — {} — {}'.format(t, ch.get('name',''), ch.get('id','')))
-- `list-guilds` — Execute list-guilds
-- `list-members` — Error: --guild-id required
-- `send-embed` — '), 16)
-- `send-message` — Error: --channel-id required
 ## Environment Variables
 
 | Variable | Required | Description |

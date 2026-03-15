@@ -3,9 +3,15 @@
   "slug": "discord-toolkit",
   "displayName": "Discord Toolkit",
   "latest": {
-    "version": "2.3.0",
-    "publishedAt": 1773448441422,
-    "commit": "https://github.com/openclaw/skills/commit/6ee647752cb428f951c75d93d9c91d0f87005689"
+    "version": "2.4.2",
+    "publishedAt": 1773575402857,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.3.0",
+      "publishedAt": 1773448441422,
+      "commit": "https://github.com/openclaw/skills/commit/6ee647752cb428f951c75d93d9c91d0f87005689"
+    }
+  ]
 }
