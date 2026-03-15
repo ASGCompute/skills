@@ -9,6 +9,7 @@ EffortList AI employs a defense-in-depth strategy to ensure user data remains se
 - **Zero Trust Identity:** All authentication is handled via Firebase (Email/Password or Google OAuth). EffortList AI never stores or processes passwords directly.
 - **Strict Data Isolation:** Firestore Security Rules enforce row-level access. Users can only access their own data; all other access is denied by default.
 - **Server-Side Security:** The Developer REST API uses the Firebase Admin SDK to verify tokens and SHA-256 hashes of API keys.
+- **Key Constraints:** Persistent API keys follow the `efai_` format (48 hex characters). For security, keys cannot be created or revoked programmatically via the public API; these actions are restricted to the Developer Dashboard.
 
 ## 2. Data Protection & Encryption
 
@@ -21,6 +22,7 @@ EffortList AI employs a defense-in-depth strategy to ensure user data remains se
 ## 3. AI Safety & Privacy
 
 - **Injection Protection:** User data is strictly isolated and labeled within system prompts to prevent malicious hijacking.
+- **Guest Blocking:** Hosts can block specific email addresses from booking via the `/availability/blocks` API, preventing unwanted scheduling attempts.
 - **Enterprise-Tier Privacy:** EffortList AI uses enterprise APIs (Google Cloud Vertex AI). Personal data is **never** used to train the underlying AI models.
 - **Strict Output Control:** AI is constrained to validated JSON schemas.
 

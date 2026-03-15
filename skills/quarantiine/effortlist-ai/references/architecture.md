@@ -30,6 +30,7 @@ Every /omni command or API-driven scheduling request follows a strictly orchestr
 - **Model:** gemini-3-flash-preview
 - **Logic:** Ensures work events do not overlap with protected breaks (isProtectedTime: true).
 - **Agent Tip:** Always flag crucial personal events (lunch, family time, rest) with isProtectedTime: true to trigger this secondary validation safety net.
+- **Conflict Handling:** The API returns a `409 Conflict` for overlaps in action todos unless `ignoreConflicts: true` is provided.
 
 ---
 
@@ -39,10 +40,20 @@ Every /omni command or API-driven scheduling request follows a strictly orchestr
 The engine prioritizes placing new items in existing gaps in the schedule rather than pushing existing items, unless explicitly instructed.
 
 ### Cascade Protection
-When a Folder or Task is being deleted while a child item is being *updated* (e.g., moved to a different folder), the engine proactively excludes the child from the cascade deletion.
+When a Folder or Task is being deleted while a child item is being *updated* (e.g., moved to a different folder), the engine proactively excludes the child from the cascade deletion. (Atomic Purge)
 
-### Deterministic Sync
-The "Smart Sync" logic protects local user edits. If the AI proposes a change that conflicts with a manually edited item, the manual edit usually takes precedence unless the AI has a high confidence forceUpdate flag.
+### Appointment & Smart Sync
+The engine maintains a "Smart Sync" for booked todos (`isBooked: true`).
+- **Rescheduling:** Updates to `dueDate` or `endTime` notify the guest.
+- **Silent Updates:** Updates to `location` or parent IDs (`taskId`/`folderId`) are internal and do not notify guests.
+- **Cancellation:** Deleting a booked todo automatically cancels the appointment and notifies the guest.
+- **Redundancy:** Updating `recurrence` on a booked item also triggers cancellation.
+
+### Undo/Redo Stack
+The platform maintains a robust, stateless Undo/Redo history for all mutations (creation, update, cascading deletion).
+- **Endpoint:** `/api/v1/undo` and `/api/v1/redo`.
+- **Ordering:** Newest to oldest.
+- **Targeting:** Supports reversing specific actions via `?id=`.
 
 ---
 

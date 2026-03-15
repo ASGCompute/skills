@@ -37,14 +37,23 @@ EffortList AI operates on a strictly nested hierarchy:
 | "Plan a project" | Create Folder -> Tasks -> Todos    | `POST /folders`, `POST /tasks`, `POST /todos`  |
 | "Fix my mistake" | Fetch History -> Target ID -> Undo | `GET /api/v1/undo`, `POST /api/v1/undo?id=...` |
 | "Show my day"    | Fetch Todos by Date Range          | `GET /api/v1/todos?from=...&to=...`            |
+| "Check settings" | Fetch User Profile & Schedule      | `GET /api/v1/me`                               |
 | "Surgical Edit"  | Patch update a specific record     | `PATCH /api/v1/{type}?id=...`                  |
+| "Manage Links"   | Create or update booking links     | `POST/PATCH /api/v1/availability/links`        |
+| "Review Appts"   | Accept or decline appointments     | `PATCH /api/v1/appointments/{id}`              |
 
 ## 🛠️ Execution Logic (The "Omni" Way)
 
 1. **Surgical Extraction & Patching:** Always prefer fetching a specific record by its ID (`GET ?id=...`) over broad list fetches. When updating, use `PATCH` with the record `?id=`.
-2. **Phase-Aware Scheduling:** Be mindful of the 5-phase Omni processing loop (Temporal Resolution, Decomposition, Parallel Reasoning, Synthesis, and Break Validation). Proactively flag events with `isProtectedTime: true` to trigger the server-side safety net.
-3. **Cascading Safety:** Be aware that deleting a Folder or Task is an **Atomic Purge**. However, the engine protects items that are simultaneously being updated from accidental deletion.
-4. **Human Factors:** When proposing schedules, apply "Gap-First Placement" and "Human Factor" rules (e.g., leaving space for transitions).
+2. **Phase-Aware Scheduling:** Be mindful of the 5-phase Omni processing loop. Proactively flag events with `isProtectedTime: true` to trigger the server-side safety net. Use `ignoreConflicts: true` only when explicit user intent overrides overlap protection.
+3. **Appointment Awareness:** Be extremely cautious when deleting or rescheduling items where `isBooked: true`. This triggers automatic guest notifications/cancellations. Confirm with the user before performing destructive actions on booked slots.
+4. **Efficiency & Throttling:** Respect the **100 requests per minute** rate limit. For bulk operations, batch requests appropriately and check `X-RateLimit-Remaining` headers.
+5. **Pagination:** When listing folders, tasks, or todos, use `limit` and `offset` for large datasets.
+6. **Scheduling Alignment:** Before blocking large segments of time or creating new recurring todos, use `GET /api/v1/me` to align with the user's `weeklySchedule`, `timezone`, and `minimumNotice` preferences.
+7. **Cascading Safety:** Be aware that deleting a Folder or Task is an **Atomic Purge**. However, the engine protects items that are simultaneously being updated from accidental deletion.
+8. **Temporal Fidelity:** When reporting event times to the user, strictly respect the user's `timezone` and local time offset (e.g., CDT vs. CST). Provide dates and times exactly as they appear in the local context or as explicitly requested, without performing unsolicited manual shifts. Use the `/me` endpoint to confirm the active offset before finalizing any scheduling summaries.
+9. **Global Availability Awareness:** Before modifying booking links or schedules, use `GET /api/v1/availability` to retrieve the current `weeklySchedule`, `timezone`, and `minimumNotice` settings.
+10. **Undo/Redo Competency:** If a destructive operation is performed in error, use the Undo stack (`POST /api/v1/undo`) to restore state.
 
 ## 🔒 Security & Privacy (Zero Trust)
 
@@ -56,5 +65,3 @@ EffortList AI operates on a strictly nested hierarchy:
 - **Full API Reference:** [API DOCs](https://www.effortlist.io/docs)
 - **Omni Architecture:** (Located in references/architecture.md)
 - **Security Audit Docs:** [SECURITY](https://www.effortlist.io/security)
-
-**Project Version:** 1.7.5
