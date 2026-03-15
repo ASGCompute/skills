@@ -30,3 +30,13 @@ perftest help
 ---
 💬 Feedback: https://bytesagain.com/feedback
 Powered by BytesAgain | bytesagain.com
+
+## How It Works
+
+Reads input, processes with built-in logic, outputs results. All data stays local.
+
+## Tips
+
+- Run `perftest help` for all commands
+- No API keys required
+- Works offline
