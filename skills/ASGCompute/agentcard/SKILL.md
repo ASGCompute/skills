@@ -1,4 +1,4 @@
----
+--
 name: asgcard
 description: Virtual MasterCards for AI agents - crypto payments, USDC wallet, create and manage virtual payment cards autonomously via x402 protocol on Stellar blockchain.
 version: 0.2.0
