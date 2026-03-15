@@ -25,9 +25,27 @@ description: "Dispute Letter Generator. Use when you need dispute letter capabil
   template        template
 ```
 
-
 ---
 *Dispute Letter by BytesAgain*
 ---
 💬 Feedback & Feature Requests: https://bytesagain.com/feedback
 Powered by BytesAgain | bytesagain.com
+
+- Run `dispute-letter help` for commands
+- No API keys needed
+
+- Run `dispute-letter help` for all commands
+
+## Commands
+
+Run `dispute-letter help` to see all available commands.
+
+- Run `dispute-letter help` for all commands
+
+## Output
+
+Results go to stdout. Save with `dispute-letter run > output.txt`.
+
+## Configuration
+
+Set `DISPUTE_LETTER_DIR` to change data directory. Default: `~/.local/share/dispute-letter/`
