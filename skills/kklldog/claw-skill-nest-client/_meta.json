@@ -3,9 +3,15 @@
   "slug": "claw-skill-nest-client",
   "displayName": "Local Claw Skill Nest Client",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1773572779843,
-    "commit": "https://github.com/openclaw/skills/commit/e56003d5fee7b122d1010d599d7621715abe7c61"
+    "version": "1.0.2",
+    "publishedAt": 1773585996218,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1773572779843,
+      "commit": "https://github.com/openclaw/skills/commit/e56003d5fee7b122d1010d599d7621715abe7c61"
+    }
+  ]
 }
