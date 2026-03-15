@@ -3,11 +3,16 @@
   "slug": "perftest",
   "displayName": "Perftest",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1773572150694,
-    "commit": "https://github.com/openclaw/skills/commit/98d4f45ea2a8fd9f7737ed6ca8a0261aca52a901"
+    "version": "1.0.3",
+    "publishedAt": 1773611576834,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1773572150694,
+      "commit": "https://github.com/openclaw/skills/commit/98d4f45ea2a8fd9f7737ed6ca8a0261aca52a901"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773539608418,

@@ -18,7 +18,7 @@ Run `perftest help` for available commands and usage examples.
 
 - Fast and lightweight — pure bash with embedded Python
 - No external dependencies required
-- Data stored locally in `~/.perftest/`
+ in `~/.perftest/`
 - Works on Linux and macOS
 
 ## Usage
@@ -31,12 +31,8 @@ perftest help
 💬 Feedback: https://bytesagain.com/feedback
 Powered by BytesAgain | bytesagain.com
 
-## How It Works
-
-Reads input, processes with built-in logic, outputs results. All data stays local.
-
-## Tips
-
 - Run `perftest help` for all commands
-- No API keys required
-- Works offline
+
+## Configuration
+
+Set `PERFTEST_DIR` to change data directory. Default: `~/.local/share/perftest/`
